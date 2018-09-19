@@ -4,7 +4,6 @@
 #include "TFile.h"
 #include "TGFileDialog.h"
 #include "TGNumberEntry.h"
-#include "TH3I.h"
 #include "TLegend.h"
 #include "TNtupleD.h"
 #include "TObject.h"
@@ -17,11 +16,11 @@
 #include "TObject.h"
 #include "TPolyLine3D.h"
 
-class Particle : public TPolyLine3D
+class Particle : public TEveLine
 {
   public :
-    Particle();
-    void DrawMomentum(Option_t *option="");
+    Particle(const char *_name);
+    void SetMomentum();
 
     double _px; 
     double _py; 
@@ -31,19 +30,18 @@ class Particle : public TPolyLine3D
 };
 
 // constractor
-Particle::Particle() :  // TPolyLine3D()の引数は
-                        TPolyLine3D(100), 
+Particle::Particle(const char *_name) :  // TPolyLine3D()の引数は
+                        TEveLine(_name), 
                         _px(0),
                         _py(0), 
                         _pz(0)
 {
-  SetPoint(1,0,0,0);
+  SetNextPoint(0,0,0);
 }
 
-void Particle::DrawMomentum(Option_t *option)
+void Particle::SetMomentum()
 {
-   SetPoint(2,_px,_py,_pz);
-   Draw(option);
+   SetNextPoint(_px, _py, _pz);
 }
 
 #endif
@@ -59,7 +57,6 @@ class TFile;
 class TGNumberEntryField;
 class TPolyLine3D;
 class TLegend;
-class TH3I;
 class Particle;
 
 class Event : public TObject
@@ -108,8 +105,6 @@ class Event : public TObject
     TPolyLine3D *_zline;
 
     TLegend *_leg;
-    
-    TH3I *_world;
 
   ClassDef(Event,1) // とりあえず書いておいたほうがいいらしい。
 };
@@ -137,22 +132,7 @@ Event::Event() : // メンバ変数の初期化．この場合はコンストラ
                  _yline(0),
                  _zline(0),
                  // ファイル
-                 _file(0)
-{
-
-  // 3Dヒストグラムの作成。
-//   _world = new TH3I("world","",
-//     1, x_min, x_max, // Int_t nbinsx, Double_t xlow, Double_t xup
-//     1, y_min, y_max, // Int_t nbinsy, Double_t ylow, Double_t yup
-//     1, z_min, z_max); // Int_t nbinsz, Double_t zlow, Double_t zup
-//   _world->SetStats(0);                    // 統計ボックス非表示
-//   _world->GetXaxis()->SetNdivisions(0);   // X軸にアクセスし、目盛り分割数を0にする
-//   _world->GetXaxis()->SetTickLength(0);   // X軸にアクセスし、目盛りの長さを0にする
-//   _world->GetYaxis()->SetNdivisions(0);
-//   _world->GetYaxis()->SetTickLength(0);
-//   _world->GetZaxis()->SetNdivisions(0);
-//   _world->GetZaxis()->SetTickLength(0);
-}
+                 _file(0) {}
 
 void Event::OpenFile()
 {
@@ -186,31 +166,31 @@ void Event::OpenFile()
   std::cerr << "Total # of events = " << _ev_max << std::endl;
 
   // b quark
-  _mc_b = new Particle();
+  _mc_b = new Particle("mc_b");
     _mc_b->SetLineColor(2);
     _mc_b->SetLineStyle(2);
-  _rc_b = new Particle();
+  _rc_b = new Particle("rc_b");
     _rc_b->SetLineColor(2);
     _rc_b->SetLineStyle(1);
   // bbar quark
-  _mc_bbar = new Particle();
+  _mc_bbar = new Particle("mc_bbar");
     _mc_bbar->SetLineColor(4);
     _mc_bbar->SetLineStyle(2);
-  _rc_bbar = new Particle();
+  _rc_bbar = new Particle("rc_bbar");
     _rc_bbar->SetLineColor(4);
     _rc_bbar->SetLineStyle(1);
   // W+ boson 
-  _mc_wp = new Particle();
+  _mc_wp = new Particle("mc_wp");
     _mc_wp->SetLineColor(6);
     _mc_wp->SetLineStyle(2);
-  _rc_wp = new Particle();
+  _rc_wp = new Particle("rc_wp");
     _rc_wp->SetLineColor(6);
     _rc_wp->SetLineStyle(1);
   // W- boson 
-  _mc_wm = new Particle();
+  _mc_wm = new Particle("mc_wm");
     _mc_wm->SetLineColor(7);
     _mc_wm->SetLineStyle(2);
-  _rc_wm = new Particle();
+  _rc_wm = new Particle("rc_wm");
     _rc_wm->SetLineColor(7);
     _rc_wm->SetLineStyle(1);
 
@@ -328,14 +308,14 @@ void Event::Update()
   _ev_field->SetNumber(_ev);
  
   _canvas->cd();                  // canvasを分割している場合、どの区画のcanvasに入るかのために重要。
-  _mc_b->DrawMomentum("same");    // optionを代入し、Drawしている。
-  _rc_b->DrawMomentum("same");
-  _mc_bbar->DrawMomentum("same");
-  _rc_bbar->DrawMomentum("same");
-  _mc_wp->DrawMomentum("same");
-  _rc_wp->DrawMomentum("same");
-  _mc_wm->DrawMomentum("same");
-  _rc_wm->DrawMomentum("same");
+  _mc_b->SetMomentum();    // optionを代入し、Drawしている。
+  _rc_b->SetMomentum();
+  _mc_bbar->SetMomentum();
+  _rc_bbar->SetMomentum();
+  _mc_wp->SetMomentum();
+  _rc_wp->SetMomentum();
+  _mc_wm->SetMomentum();
+  _rc_wm->SetMomentum();
   _leg->Draw();                   // 箱のDraw
   _canvas->Update();
 }
@@ -377,15 +357,13 @@ void sample()
         // mytube->RefMainTrans().SetPos(-10, -10, 10); // set position
         // gEve->AddElement(mytube);
 
-        // TEveLine* myline = new TEveLine;
-        // myline->SetMainColor(kGreen);
-        // myline->SetLineStyle(1);
-        // myline->SetLineWidth(5);
-        // myline->SetNextPoint(0,0,0);
-        // myline->SetNextPoint(-10,-10, 0);
-        // gEve->AddElement(myline);
-
-
+        TEveLine* myline = new TEveLine;
+        myline->SetMainColor(kGreen);
+        myline->SetLineStyle(1);
+        myline->SetLineWidth(5);
+        myline->SetNextPoint(0,0,0);
+        myline->SetNextPoint(-10,-10, 0);
+        gEve->AddElement(myline);
 
     // rendering.
     gEve->Redraw3D(kTRUE);
