@@ -8,6 +8,7 @@
 #include "TObject.h"
 #include "TSystem.h"
 #include "TEveText.h"
+#include "TEveArrow.h"
 
 #ifndef __PARTICLE_H__ // 擬似命令を取り入れてParticleの重複定義を避ける。
 #define __PARTICLE_H__
@@ -284,34 +285,41 @@ void sample() {
     gEve->AddElement(mytube);
 
     // xAxis, yAxis, zAxis
-    TEveLine* xAxis = new TEveLine;
+    TEveArrow* xAxis = new TEveArrow(15., 0., 0., 0., 0., 0.);
     xAxis->SetMainColor(kGreen);
-    xAxis->SetLineStyle(1);
-    xAxis->SetLineWidth(5);
-    xAxis->SetNextPoint(0,0,0);
-    xAxis->SetNextPoint(20, 0, 0);
+    xAxis->SetPickable(kFALSE);
+    xAxis->SetTubeR(0.01);
     gEve->AddElement(xAxis);
 
-    TEveText* x = new TEveText("x");
-    x->SetFontSize(20);
-    x->RefMainTrans().SetPos(20, 0, 0);
-    gEve->AddElement(x);
+    TEveText* xLabel = new TEveText("x");
+    xLabel->SetFontSize(40);
+    xLabel->SetMainColor(kGreen);
+    xLabel->RefMainTrans().SetPos(20, 0, 0);
+    gEve->AddElement(xLabel);
 
-    TEveLine* yAxis = new TEveLine;
-    yAxis->SetMainColor(kRed);
-    yAxis->SetLineStyle(1);
-    yAxis->SetLineWidth(5);
-    yAxis->SetNextPoint(0,0,0);
-    yAxis->SetNextPoint(0, 20, 0);
+    TEveArrow* yAxis = new TEveArrow(0., 15., 0., 0., 0., 0.);
+    yAxis->SetMainColor(kBlue);
+    yAxis->SetPickable(kFALSE);
+    yAxis->SetTubeR(0.01);
     gEve->AddElement(yAxis);
 
-    TEveLine* zAxis = new TEveLine;
-    zAxis->SetMainColor(kBlue);
-    zAxis->SetLineStyle(1);
-    zAxis->SetLineWidth(5);
-    zAxis->SetNextPoint(0,0,0);
-    zAxis->SetNextPoint(0, 0, 20);
+    TEveText* yLabel = new TEveText("y");
+    yLabel->SetFontSize(40);
+    yLabel->SetMainColor(kBlue);
+    yLabel->RefMainTrans().SetPos(0, 20, 0);
+    gEve->AddElement(yLabel);
+
+    TEveArrow* zAxis = new TEveArrow(0., 0., 15., 0., 0., 0.);
+    zAxis->SetMainColor(kRed);
+    zAxis->SetPickable(kFALSE);
+    zAxis->SetTubeR(0.01);
     gEve->AddElement(zAxis);
+
+    TEveText* zLabel = new TEveText("z");
+    zLabel->SetFontSize(40);
+    zLabel->SetMainColor(kRed);
+    zLabel->RefMainTrans().SetPos(0, 0, 20);
+    gEve->AddElement(zLabel);
 
     // Frame1の作成。
     TGHorizontalFrame* bframe1 = new TGHorizontalFrame(frm, CANVAS_WIDTH, CANVAS_HEIGHT, kFixedWidth);
