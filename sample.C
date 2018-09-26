@@ -7,6 +7,7 @@
 #include "TNtupleD.h"
 #include "TObject.h"
 #include "TSystem.h"
+#include "TEveText.h"
 
 #ifndef __PARTICLE_H__ // 擬似命令を取り入れてParticleの重複定義を避ける。
 #define __PARTICLE_H__
@@ -251,7 +252,7 @@ void Event::DrawTracks() {
 
 // main
 void sample() {    
-    const float MAINFRAME_WIDTH  = 600.;
+    const float MAINFRAME_WIDTH  = 800.;
     const float MAINFRAME_HEIGHT = 600.;
     const float CANVAS_WIDTH     = 600.;
     const float CANVAS_HEIGHT    = 560.;
@@ -262,7 +263,7 @@ void sample() {
       
     // create eve canvas
     TEvePad* pad = new TEvePad();
-    pad->SetFillColor(kGray);
+    pad->SetFillColor(kWhite);
 
     // create an embed GL viewer 
     TGLEmbeddedViewer* embviewer = new TGLEmbeddedViewer(frm, pad);
@@ -275,22 +276,42 @@ void sample() {
     viewer->AddScene(gEve->GetEventScene());
     gEve->GetViewers()->AddElement(viewer);
 
-    // display elements settings
+    // define a tube (cylinder)
+    TEveGeoShape* mytube = new TEveGeoShape;
+    mytube->SetShape(new TGeoTube(10, 10.1, 10)); // rmin, rmax, dz
+    mytube->SetNSegments(100); // number of vertices
+    mytube->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(mytube);
 
-        // // define a tube (cylinder)
-        // TEveGeoShape* mytube = new TEveGeoShape;
-        // mytube->SetShape(new TGeoTube(10, 10.1, 10)); // rmin, rmax, dz
-        // mytube->SetNSegments(100); // number of vertices
-        // mytube->RefMainTrans().SetPos(-10, -10, 10); // set position
-        // gEve->AddElement(mytube);
+    // xAxis, yAxis, zAxis
+    TEveLine* xAxis = new TEveLine;
+    xAxis->SetMainColor(kGreen);
+    xAxis->SetLineStyle(1);
+    xAxis->SetLineWidth(5);
+    xAxis->SetNextPoint(0,0,0);
+    xAxis->SetNextPoint(20, 0, 0);
+    gEve->AddElement(xAxis);
 
-        // TEveLine* myline = new TEveLine;
-        // myline->SetMainColor(kGreen);
-        // myline->SetLineStyle(1);
-        // myline->SetLineWidth(5);
-        // myline->SetNextPoint(0,0,0);
-        // myline->SetNextPoint(-10,-10, 0);
-        // gEve->AddElement(myline);
+    TEveText* x = new TEveText("x");
+    x->SetFontSize(20);
+    x->RefMainTrans().SetPos(20, 0, 0);
+    gEve->AddElement(x);
+
+    TEveLine* yAxis = new TEveLine;
+    yAxis->SetMainColor(kRed);
+    yAxis->SetLineStyle(1);
+    yAxis->SetLineWidth(5);
+    yAxis->SetNextPoint(0,0,0);
+    yAxis->SetNextPoint(0, 20, 0);
+    gEve->AddElement(yAxis);
+
+    TEveLine* zAxis = new TEveLine;
+    zAxis->SetMainColor(kBlue);
+    zAxis->SetLineStyle(1);
+    zAxis->SetLineWidth(5);
+    zAxis->SetNextPoint(0,0,0);
+    zAxis->SetNextPoint(0, 0, 20);
+    gEve->AddElement(zAxis);
 
     // Frame1の作成。
     TGHorizontalFrame* bframe1 = new TGHorizontalFrame(frm, CANVAS_WIDTH, CANVAS_HEIGHT, kFixedWidth);
