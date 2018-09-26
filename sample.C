@@ -246,7 +246,7 @@ void Event::DrawTracks() {
     _trklist->AddElement(particles[i]->GetTrack(_prop));
   }
   gEve->AddElement(_trklist);
-  gEve->Redraw3D(kTRUE);
+  gEve->Redraw3D(kFALSE, kTRUE);
 }
 
 #endif
