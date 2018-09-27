@@ -254,7 +254,7 @@ void Event::DrawTracks() {
 // main
 void sample() {    
     const float MAINFRAME_WIDTH  = 800.;
-    const float MAINFRAME_HEIGHT = 600.;
+    const float MAINFRAME_HEIGHT = 800.;
     const float CANVAS_WIDTH     = 600.;
     const float CANVAS_HEIGHT    = 560.;
 
@@ -278,48 +278,52 @@ void sample() {
     gEve->GetViewers()->AddElement(viewer);
 
     // define a tube (cylinder)
-    TEveGeoShape* mytube = new TEveGeoShape;
-    mytube->SetShape(new TGeoTube(10, 10.1, 10)); // rmin, rmax, dz
-    mytube->SetNSegments(100); // number of vertices
-    mytube->RefMainTrans().SetPos(0, 0, 0); // set position
-    gEve->AddElement(mytube);
+    TEveGeoShape* tcpDetector = new TEveGeoShape;
+    tcpDetector->SetShape(new TGeoTube(3.290000000e+02, 1.808000000e+03, 4.600000000e+03)); // rmin, rmax, dz
+    tcpDetector->SetNSegments(100); // number of vertices
+    tcpDetector->SetMainColor(kYellow);
+    tcpDetector->SetMainAlpha(0.5);
+    tcpDetector->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(tcpDetector);
 
     // xAxis, yAxis, zAxis
-    TEveArrow* xAxis = new TEveArrow(15., 0., 0., 0., 0., 0.);
+    TEveArrow* xAxis = new TEveArrow(6000., 0., 0., 0., 0., 0.);
     xAxis->SetMainColor(kGreen);
     xAxis->SetPickable(kFALSE);
-    xAxis->SetTubeR(0.01);
+    xAxis->SetTubeR(0.1E-02);
     gEve->AddElement(xAxis);
 
     TEveText* xLabel = new TEveText("x");
     xLabel->SetFontSize(40);
     xLabel->SetMainColor(kGreen);
-    xLabel->RefMainTrans().SetPos(20, 0, 0);
+    xLabel->RefMainTrans().SetPos(6100, 0, 0);
     gEve->AddElement(xLabel);
 
-    TEveArrow* yAxis = new TEveArrow(0., 15., 0., 0., 0., 0.);
+    TEveArrow* yAxis = new TEveArrow(0., 6000., 0., 0., 0., 0.);
     yAxis->SetMainColor(kBlue);
     yAxis->SetPickable(kFALSE);
-    yAxis->SetTubeR(0.01);
+    yAxis->SetTubeR(0.1E-02);
     gEve->AddElement(yAxis);
 
     TEveText* yLabel = new TEveText("y");
     yLabel->SetFontSize(40);
     yLabel->SetMainColor(kBlue);
-    yLabel->RefMainTrans().SetPos(0, 20, 0);
+    yLabel->RefMainTrans().SetPos(0, 6100, 0);
     gEve->AddElement(yLabel);
 
-    TEveArrow* zAxis = new TEveArrow(0., 0., 15., 0., 0., 0.);
+    TEveArrow* zAxis = new TEveArrow(0., 0., 6000., 0., 0., 0.);
     zAxis->SetMainColor(kRed);
     zAxis->SetPickable(kFALSE);
-    zAxis->SetTubeR(0.01);
+    zAxis->SetTubeR(0.1E-02);
     gEve->AddElement(zAxis);
 
     TEveText* zLabel = new TEveText("z");
     zLabel->SetFontSize(40);
     zLabel->SetMainColor(kRed);
-    zLabel->RefMainTrans().SetPos(0, 0, 20);
+    zLabel->RefMainTrans().SetPos(0, 0, 6100);
     gEve->AddElement(zLabel);
+
+    gEve->Redraw3D(kTRUE);
 
     // Frame1の作成。
     TGHorizontalFrame* bframe1 = new TGHorizontalFrame(frm, CANVAS_WIDTH, CANVAS_HEIGHT, kFixedWidth);
