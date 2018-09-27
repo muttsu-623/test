@@ -200,7 +200,7 @@ void Event::OpenFile() {
     _trklist = new TEveTrackList();
     _prop = _trklist->GetPropagator();
     _prop->SetMagField(3.); //FIXME
-    _prop->SetMaxZ(30);     //FIXME
+    // _prop->SetMaxZ(30);     //FIXME
   }
 
   // b quark
