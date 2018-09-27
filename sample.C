@@ -29,8 +29,9 @@ class Particle {
     Particle();
 
     TEveTrack* GetTrack(TEveTrackPropagator* prop);
-    void SetLineColor(int in) { _linecolor = in; }
-    void SetLineWidth(int in) { _linewidth = in; }
+    void SetLineColor(int in) { _lineColor = in; }
+    void SetLineWidth(int in) { _lineWidth = in; }
+    void SetLineStyle(int in) { _lineStyle = in; }
 
     double _px; 
     double _py; 
@@ -43,8 +44,9 @@ class Particle {
     int    _pdg;
 
   private :
-    int    _linecolor;
-    int    _linewidth;
+    int _lineColor;
+    int _lineWidth;
+    int _lineStyle;
     
     TParticle* _tpart; // This is necessary to create TEveTrack.
     TEveTrack* _evtrk; // This will be passed to gEve.
@@ -63,8 +65,9 @@ Particle::Particle() :
                         _vz(0),
                         _t0(0),
                         _pdg(11),
-                        _linecolor(1),
-                        _linewidth(1),
+                        _lineColor(1),
+                        _lineWidth(1),
+                        _lineStyle(1),
 	                      _tpart(0),
                         _evtrk(0) {}
 
@@ -80,8 +83,9 @@ TEveTrack* Particle::GetTrack(TEveTrackPropagator* prop) {
   // step3 assign the particle to track object 
   _evtrk = new TEveTrack(_tpart,0,prop);
   _evtrk->MakeTrack();
-  _evtrk->SetMainColor(_linecolor);
-  _evtrk->SetLineWidth(_linewidth);
+  _evtrk->SetMainColor(_lineColor);
+  _evtrk->SetLineWidth(_lineWidth);
+  _evtrk->SetLineStyle(_lineStyle);
   return _evtrk;
 }
 
@@ -131,7 +135,13 @@ class Event : public TObject {
     TGNumberEntryField* _ev_field; // 何番目の数字か表示されているUI部品
 
     Particle* _mc_b;    // MC(Monte Carlo) info b 
+    Particle* _rc_b;    // Reco info b
     Particle* _mc_bbar; // MC info bbar    
+    Particle* _rc_bbar; // Reco info bbar
+    Particle* _mc_wp;   // MC info W+  
+    Particle* _rc_wp;   // Reco info W+
+    Particle* _mc_wm;   // MC info W- 
+    Particle* _rc_wm;   // Reco info W-
 
     std::vector<Particle*> particles;
     void DrawTracks();
@@ -151,7 +161,13 @@ Event::Event() : // メンバ変数の初期化．この場合はコンストラ
                  // 粒子に関して
                  _trklist(0),
                  _mc_b(0),
+                 _rc_b(0),
                  _mc_bbar(0),
+                 _rc_bbar(0),
+                 _mc_wp(0),
+                 _rc_wp(0),
+                 _mc_wm(0),
+                 _rc_wm(0),
                  // ファイル
                  _file(0),
 		            _ev_field(0) {}
@@ -162,7 +178,13 @@ void Event::OpenFile() {
   _ev_field->SetNumber(_ev); // _ev_fieldに_evの値をセット。
 
   if (_mc_b) delete _mc_b;
+  if (_rc_b) delete _rc_b;
   if (_mc_bbar) delete _mc_bbar;
+  if (_rc_bbar) delete _rc_bbar;
+  if (_mc_wp) delete _mc_wp;
+  if (_rc_wp) delete _rc_wp;
+  if (_mc_wm) delete _mc_wm;
+  if (_rc_wm) delete _rc_wm;
 
   _fileinfo = new TGFileInfo();
   _fileinfo->fIniDir=(char*)".";
@@ -185,21 +207,70 @@ void Event::OpenFile() {
   _mc_b = new Particle();
     _mc_b->SetLineColor(2);
     _mc_b->SetLineWidth(2);
+    _mc_b->SetLineStyle(1);
+  _rc_b = new Particle();
+    _rc_b->SetLineColor(2);
+    _rc_b->SetLineWidth(2);
+    _rc_b->SetLineStyle(2);
   // bbar quark
   _mc_bbar = new Particle();
     _mc_bbar->SetLineColor(4);
     _mc_bbar->SetLineWidth(2);
+  _rc_bbar = new Particle();
+    _rc_bbar->SetLineColor(4);
+    _rc_bbar->SetLineWidth(2);
+    _rc_b->SetLineStyle(2);
+  // W+ boson 
+  _mc_wp = new Particle();
+    _mc_wp->SetLineColor(6);
+    _mc_bbar->SetLineWidth(2);
+  _rc_wp = new Particle();
+    _rc_wp->SetLineColor(6);
+    _rc_wp->SetLineWidth(1);
+    _rc_b->SetLineStyle(2);
+  // W- boson 
+  _mc_wm = new Particle();
+    _mc_wm->SetLineColor(8);
+    _mc_wm->SetLineWidth(2);
+  _rc_wm = new Particle();
+    _rc_wm->SetLineColor(8);
+    _rc_wm->SetLineWidth(1);
+    _rc_b->SetLineStyle(2);
 
   particles.push_back(_mc_b);
+  particles.push_back(_rc_b);
   particles.push_back(_mc_bbar);
+  particles.push_back(_rc_bbar);
+  particles.push_back(_mc_wp);
+  particles.push_back(_rc_wp);
+  particles.push_back(_mc_wm);
+  particles.push_back(_rc_wm);
 
   // TTreeの値をそれぞれ代入している。
   _tup->SetBranchAddress("b_px", &_mc_b->_px); // TTreeから"b_px"を取り出して、_mc_bのpxに入れている。
   _tup->SetBranchAddress("b_py", &_mc_b->_py); // TTreeから"b_py"を取り出して、_mc_bのpyに入れている。
   _tup->SetBranchAddress("b_pz", &_mc_b->_pz); // TTreeから"b_pz"を取り出して、_mc_bのpzに入れている。
+  _tup->SetBranchAddress("b_px_rec", &_rc_b->_px);
+  _tup->SetBranchAddress("b_py_rec", &_rc_b->_py);
+  _tup->SetBranchAddress("b_pz_rec", &_rc_b->_pz);
   _tup->SetBranchAddress("bbar_px", &_mc_bbar->_px);
   _tup->SetBranchAddress("bbar_py", &_mc_bbar->_py);
   _tup->SetBranchAddress("bbar_pz", &_mc_bbar->_pz);
+  _tup->SetBranchAddress("bbar_px_rec", &_rc_bbar->_px);
+  _tup->SetBranchAddress("bbar_py_rec", &_rc_bbar->_py);
+  _tup->SetBranchAddress("bbar_pz_rec", &_rc_bbar->_pz);
+  _tup->SetBranchAddress("wp_px", &_mc_wp->_px);
+  _tup->SetBranchAddress("wp_py", &_mc_wp->_py);
+  _tup->SetBranchAddress("wp_pz", &_mc_wp->_pz);
+  _tup->SetBranchAddress("wp_px_rec", &_rc_wp->_px);
+  _tup->SetBranchAddress("wp_py_rec", &_rc_wp->_py);
+  _tup->SetBranchAddress("wp_pz_rec", &_rc_wp->_pz);
+  _tup->SetBranchAddress("wm_px", &_mc_wm->_px);
+  _tup->SetBranchAddress("wm_py", &_mc_wm->_py);
+  _tup->SetBranchAddress("wm_pz", &_mc_wm->_pz);
+  _tup->SetBranchAddress("wm_px_rec", &_rc_wm->_px);
+  _tup->SetBranchAddress("wm_py_rec", &_rc_wm->_py);
+  _tup->SetBranchAddress("wm_pz_rec", &_rc_wm->_pz);
 }
 
 void Event::Next() {
