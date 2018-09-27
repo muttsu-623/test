@@ -6,9 +6,14 @@ This is my reaech report. I write what I did and what I will do.
 
 ## Daily
 
+### 20181003
+- [ ] Display particles labels.
+- [ ] Explain particles energy and momentum.
+
 ### 20180927
 - [x] Display TCP detector.
-- [ ] 
+- [ ] Display other particles in the ROOT file
+    - [ ] myE347-Ptt-ln4q.eL.pR.01_4j.root
 
 ### 20180926
 - [x] I write a tube and xyz axis on the event display.
