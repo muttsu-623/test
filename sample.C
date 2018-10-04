@@ -199,43 +199,47 @@ void Event::OpenFile() {
 	  cerr << "_trklist has been set." << endl;
     _trklist = new TEveTrackList();
     _prop = _trklist->GetPropagator();
+    _prop->SetMaxR(1.797693e+308);
+    _prop->SetMaxZ(1.797693e+308);
     _prop->SetMagField(3.); //FIXME
-    // _prop->SetMaxZ(30);     //FIXME
   }
 
   // b quark
   _mc_b = new Particle();
-    _mc_b->SetLineColor(2);
+    _mc_b->SetLineColor(kRed);
     _mc_b->SetLineWidth(2);
     _mc_b->SetLineStyle(1);
   _rc_b = new Particle();
-    _rc_b->SetLineColor(2);
+    _rc_b->SetLineColor(kRed);
     _rc_b->SetLineWidth(2);
     _rc_b->SetLineStyle(2);
   // bbar quark
   _mc_bbar = new Particle();
-    _mc_bbar->SetLineColor(4);
+    _mc_bbar->SetLineColor(kBlue);
     _mc_bbar->SetLineWidth(2);
+    _mc_bbar->SetLineStyle(1);
   _rc_bbar = new Particle();
-    _rc_bbar->SetLineColor(4);
+    _rc_bbar->SetLineColor(kBlue);
     _rc_bbar->SetLineWidth(2);
-    _rc_b->SetLineStyle(2);
+    _rc_bbar->SetLineStyle(2);
   // W+ boson 
   _mc_wp = new Particle();
-    _mc_wp->SetLineColor(6);
-    _mc_bbar->SetLineWidth(2);
+    _mc_wp->SetLineColor(kGreen);
+    _mc_wp->SetLineWidth(2);
+    _mc_wp->SetLineStyle(1);
   _rc_wp = new Particle();
-    _rc_wp->SetLineColor(6);
+    _rc_wp->SetLineColor(kGreen);
     _rc_wp->SetLineWidth(1);
-    _rc_b->SetLineStyle(2);
+    _rc_wp->SetLineStyle(2);
   // W- boson 
   _mc_wm = new Particle();
-    _mc_wm->SetLineColor(8);
+    _mc_wm->SetLineColor(kBlack);
     _mc_wm->SetLineWidth(2);
+    _mc_wm->SetLineStyle(1);
   _rc_wm = new Particle();
-    _rc_wm->SetLineColor(8);
+    _rc_wm->SetLineColor(kBlack);
     _rc_wm->SetLineWidth(1);
-    _rc_b->SetLineStyle(2);
+    _rc_wm->SetLineStyle(2);
 
   particles.push_back(_mc_b);
   particles.push_back(_rc_b);
