@@ -353,13 +353,29 @@ void sample() {
     gEve->GetViewers()->AddElement(viewer);
 
     // define a tube (cylinder)
-    TEveGeoShape* tcpDetector = new TEveGeoShape;
-    tcpDetector->SetShape(new TGeoTube(3.290000000e+02, 1.808000000e+03, 4.600000000e+03)); // rmin, rmax, dz
-    tcpDetector->SetNSegments(100); // number of vertices
-    tcpDetector->SetMainColor(kYellow);
-    tcpDetector->SetMainAlpha(0.5);
-    tcpDetector->RefMainTrans().SetPos(0, 0, 0); // set position
-    gEve->AddElement(tcpDetector);
+    TEveGeoShape* tcp = new TEveGeoShape;
+    tcp->SetShape(new TGeoTube(3.290000000e+02, 1.808000000e+03, 2.350000000e+03)); // rmin, rmax, dz
+    tcp->SetNSegments(100); // number of vertices
+    tcp->SetMainColor(kYellow);
+    tcp->SetMainAlpha(0.5);
+    tcp->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(tcp);
+
+    TEveGeoShape* eCal = new TEveGeoShape;
+    eCal->SetShape(new TGeoTube(1.847415655e+03, 2.028e+03, 2.350000000e+03)); // rmin, rmax, dz
+    eCal->SetNSegments(100); // number of vertices
+    eCal->SetMainColor(kGreen);
+    eCal->SetMainAlpha(0.5);
+    eCal->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(eCal);
+
+    TEveGeoShape* hCal = new TEveGeoShape;
+    hCal->SetShape(new TGeoTube(2.058000000e+03, 3.39546e+03, 2.350000000e+03)); // rmin, rmax, dz
+    hCal->SetNSegments(100); // number of vertices
+    hCal->SetMainColor(kBlue);
+    hCal->SetMainAlpha(0.5);
+    hCal->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(hCal);
 
     // xAxis, yAxis, zAxis
     TEveArrow* xAxis = new TEveArrow(6000., 0., 0., 0., 0., 0.);
