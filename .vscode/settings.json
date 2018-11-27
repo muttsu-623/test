@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "tevetrans.h": "c",
+        "tevetrack.h": "c",
+        "vector": "c",
+        "iostream": "c",
+        "tevetrackpropagator.h": "c",
+        "lcio.h": "c",
+        "map": "cpp"
+    }
+}

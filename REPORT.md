@@ -9,10 +9,20 @@ This is my reaech report. I write what I did and what I will do.
 ### Final
 - [ ] dicover why reconstraction is failed.
 
+### 20181030
+
+### 20181011
+- [ ] Find way to be eable to use LCIO, but I couldn't
+
+### 20181010
+- [ ] Explain particles in a display.
+    * I tried it but there was a error so I couldn't display them.
+
 ### 20181009
 - [ ] Understand Okugawa-san's research and know why reconstraction is failed.
-- [ ] Display other detectors.
+- [x] Display other detectors.
 - [ ] Explain particles in a display.
+    - [ ] I guess that the lable of particle should be drawn at the end point. So I should know the end point.
 
 ### 20181004
 - [x] Discover why are tracks drawn only until they reaches detector.
