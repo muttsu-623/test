@@ -51,27 +51,11 @@ int main(int argc, char** argv) {
     tcp->RefMainTrans().SetPos(0, 0, 0); // set position
     gEve->AddElement(tcp);
 
-    TEveGeoShape* eCal = new TEveGeoShape;
-    eCal->SetShape(new TGeoTube(1.847415655e+03, 2.028e+03, 2.350000000e+03)); // rmin, rmax, dz
-    eCal->SetNSegments(100); // number of vertices
-    eCal->SetMainColor(kGreen);
-    eCal->SetMainAlpha(0.5);
-    eCal->RefMainTrans().SetPos(0, 0, 0); // set position
-    gEve->AddElement(eCal);
-
-    TEveGeoShape* hCal = new TEveGeoShape;
-    hCal->SetShape(new TGeoTube(2.058000000e+03, 3.39546e+03, 2.350000000e+03)); // rmin, rmax, dz
-    hCal->SetNSegments(100); // number of vertices
-    hCal->SetMainColor(kBlue);
-    hCal->SetMainAlpha(0.5);
-    hCal->RefMainTrans().SetPos(0, 0, 0); // set position
-    gEve->AddElement(hCal);
-
     // xAxis, yAxis, zAxis
     TEveArrow* xAxis = new TEveArrow(6000., 0., 0., 0., 0., 0.);
     xAxis->SetMainColor(kGreen);
     xAxis->SetPickable(kFALSE);
-    xAxis->SetTubeR(0.1E-02);
+    xAxis->SetTubeR(0.1E-03);
     gEve->AddElement(xAxis);
 
     TEveText* xLabel = new TEveText("x");
@@ -83,7 +67,7 @@ int main(int argc, char** argv) {
     TEveArrow* yAxis = new TEveArrow(0., 6000., 0., 0., 0., 0.);
     yAxis->SetMainColor(kBlue);
     yAxis->SetPickable(kFALSE);
-    yAxis->SetTubeR(0.1E-02);
+    yAxis->SetTubeR(0.1E-03);
     gEve->AddElement(yAxis);
 
     TEveText* yLabel = new TEveText("y");
@@ -95,7 +79,7 @@ int main(int argc, char** argv) {
     TEveArrow* zAxis = new TEveArrow(0., 0., 6000., 0., 0., 0.);
     zAxis->SetMainColor(kRed);
     zAxis->SetPickable(kFALSE);
-    zAxis->SetTubeR(0.1E-02);
+    zAxis->SetTubeR(0.1E-03);
     gEve->AddElement(zAxis);
 
     TEveText* zLabel = new TEveText("z");
@@ -104,7 +88,7 @@ int main(int argc, char** argv) {
     zLabel->RefMainTrans().SetPos(0, 0, 6100);
     gEve->AddElement(zLabel);
 
-    gEve->Redraw3D(kTRUE);
+    gEve->Redraw3D(kFALSE, kTRUE);
 
     Event *ev = new Event();
 
@@ -115,6 +99,10 @@ int main(int argc, char** argv) {
     TGTextButton* b_open = new TGTextButton(bframe1,"Open File");
     b_open->Connect("Clicked()","Event",ev,"OpenFile()");
     bframe1->AddFrame(b_open,new TGLayoutHints(kLHintsLeft));
+
+    TGTextButton* b_next = new TGTextButton(bframe1,"Next");
+    b_next->Connect("Clicked()","Event",ev,"Next()");
+    bframe1->AddFrame(b_next,new TGLayoutHints(kLHintsCenterX));
 
     // exitボタン。
     TGTextButton* b_exit = new TGTextButton(bframe1,"Exit","gApplication->Terminate(0)");
@@ -127,6 +115,8 @@ int main(int argc, char** argv) {
     frm->MapWindow();
 
     app->Run(kTRUE);
+
+    ev->OpenFile();
 
     return 0;
 }
