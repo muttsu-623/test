@@ -154,9 +154,9 @@ int main(int argc, char** argv) {
     frm->Resize(MAINFRAME_WIDTH,MAINFRAME_HEIGHT);
     frm->MapWindow();
 
-    app->Run(kTRUE);
-
     ev->OpenFile();
+
+    app->Run(kTRUE);
 
     return 0;
 }
