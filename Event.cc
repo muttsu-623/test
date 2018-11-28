@@ -41,6 +41,11 @@ Event::Event() : // メンバ変数の初期化．この場合はコンストラ
                  _evt(0) {}
 
 void Event::OpenFile() {
+	if (_fileinfo) 
+	{
+		cout << "A file is already opened!!" << endl;
+		return; 
+	}
     _ev = 0;
 
     _fileinfo = new TGFileInfo();
@@ -51,22 +56,63 @@ void Event::OpenFile() {
     _lcReader = lcio::LCFactory::getInstance()->createLCReader(IO::LCReader::directAccess);
     _lcReader->open(_fileinfo->fFilename);
 
-    cout  << endl <<  "     "  << _fileinfo->fFilename
-    <<  "     [ number of runs: "    <<  _lcReader->getNumberOfRuns() 
+	_numberOfEvents = _lcReader->getNumberOfEvents();
+	if (_numberOfEvents == 0) 
+	{
+		cout << "This slcio file don't include events!!" << endl;
+		return;
+	} 
+	else 
+	{
+		cout << endl <<  "     [ number of runs: "    <<  _lcReader->getNumberOfRuns() 
     <<       ", number of events: "  <<  _lcReader->getNumberOfEvents() << " ] "   
     << endl
     << endl; 
-
-    Next();
+		loadEvent();
+}
 }
 
 void Event::Next() {
+	if (_eventNumber >= _lcReader->getNumberOfEvents()) 
+	{
+		cout << "Already displayed last event!!" << endl;
+		return;
+	}
+	
+	++_eventNumber;
+	loadEvent();
+}
+
+void Event::Prev() {
+	if (_eventNumber == 0) 
+	{
+		cout << "Already displayed first event!!" << endl;
+		return;
+	}
+
+	--_eventNumber;
+	loadEvent();
+}
+
+void Event::loadEvent() {
+	if (_runNumber == -1) 
+	{
     _evt = _lcReader->readNextEvent();
-    if (_evt != 0) {
+		_runNumber = _evt->getRunNumber();
+		_eventNumber = _evt->getEventNumber();
+	} 
+	else 
+	{
+		_evt = _lcReader->readEvent(_runNumber, _eventNumber);
+	}
+
+	if (_evt != 0) 
+	{
         printEventInfo(_evt);
         const vector< string >* strVec = _evt->getCollectionNames() ;
         vector< string >::const_iterator name ;
-        for(name = strVec->begin() ; name != strVec->end() ; name++){
+		for(name = strVec->begin() ; name != strVec->end() ; name++)
+		{
             EVENT::LCCollection* col = _evt->getCollection( *name ) ;
             if(_evt->getCollection( *name )->getTypeName() == "MCParticle") { 
                 printMCParticlesInfo(col);
@@ -79,11 +125,10 @@ void Event::Next() {
 void Event::printEventInfo(LCEvent* evt) {
     cout << endl 
         << "============================================================================" << endl ;
-        cout << " Event  : " << evt->getEventNumber() 
-        << " - run:  "         << evt->getRunNumber()
-        << " - timestamp "     << evt->getTimeStamp()   
-        << " - weight "        << evt->getWeight()   
-        << endl ;
+	cout << " Event  : " << evt->getEventNumber() << endl;
+	cout << " run:  "         << evt->getRunNumber() << endl;
+	cout << " timestamp "     << evt->getTimeStamp() << endl;
+	cout << " weight "        << evt->getWeight() << endl;
         cout << "============================================================================" << endl ;    
 
         // UTIL::LCTime evtTime( evt->getTimeStamp() ) ;
@@ -92,12 +137,6 @@ void Event::printEventInfo(LCEvent* evt) {
 }
 
 void Event::printMCParticlesInfo(const EVENT::LCCollection* col) {
-    if(col->getTypeName() != EVENT::LCIO::MCPARTICLE){
-
-        cout << " collection not of type " << EVENT::LCIO::MCPARTICLE << endl ;
-        return ;
-    }
-
     cout << endl 
     << "--------------- " << "print out of "  << EVENT::LCIO::MCPARTICLE << " collection "
     << "--------------- " << endl ;
@@ -178,26 +217,28 @@ void Event::printMCParticlesInfo(const EVENT::LCCollection* col) {
 }
 
 void Event::loadMCparticlesEvent() {
-    TEveElementList* pMCParticle = 0;
-    
-    if(pMCParticle)
+	// すでにeventがDisplayされていたら読み込まれる
+    if(_pMCParticle)
     {
-        _MCPDraw=pMCParticle->GetRnrSelf();
-        _MCPChildDraw=pMCParticle->GetRnrChildren();
+        _MCPDraw=_pMCParticle->GetRnrSelf();
+        _MCPChildDraw=_pMCParticle->GetRnrChildren();
 
-        for (TEveElement::List_i itt=pMCParticle->BeginChildren(); itt!=pMCParticle->EndChildren(); itt++) 
+		// MCTrack elements
+        for (TEveElement::List_i itt=_pMCParticle->BeginChildren(); itt!=_pMCParticle->EndChildren(); itt++) 
         {
             std::string colname = (*itt)->GetElementName();
+			// MCParticleDisplayFlagマップ内にcolnameがなかったら、マップにselfのrendering値を代入する。
+			// NOTE: たぶんだが、renderingするか否かをスイッチする場合があるので、必要となりそう。
             if(_MCParticleDisplayFlag.find(colname)==_MCParticleDisplayFlag.end()) _MCParticleDisplayFlag[colname]=(*itt)->GetRnrSelf();
         }
 
-        pMCParticle->DestroyElements();
-        pMCParticle->Destroy();
+        _pMCParticle->DestroyElements();
+        _pMCParticle->Destroy();
     }
-    pMCParticle = BuildMCParticles( _evt );
-    pMCParticle -> SetRnrSelfChildren(true, true);
-    pMCParticle->SetName("MCPARTICLE");
-    gEve->AddElement(pMCParticle);
+    _pMCParticle = BuildMCParticles( _evt );
+    _pMCParticle -> SetRnrSelfChildren(_MCPDraw, _MCPChildDraw);
+    _pMCParticle->SetName("MCPARTICLE");
+    gEve->AddElement(_pMCParticle);
     gEve->Redraw3D(kFALSE, kTRUE);
 }
 
@@ -236,7 +277,7 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 	//  TEveTrackPropagator* propsetLowE = new TEveTrackPropagator();
 
 	// 磁場の設定
-	propsetCharged->SetMagFieldObj(new TEveMagFieldDuo(350, -3.5, 2.0));
+	propsetCharged->SetMagField(-3.5);
 	propsetCharged->SetName("Track propagator for charged particles");
 	propsetCharged->SetMaxR(1000);
 	propsetCharged->SetMaxZ(1000);
@@ -244,7 +285,7 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 	propsetCharged->SetDelta(0.01);
 	//	propsetCharged->SetStepper(TEveTrackPropagator::kRungeKutta);
 
-	propsetNeutral->SetMagFieldObj(new TEveMagFieldConst(0., 0., -3.5));
+	propsetNeutral->SetMagField(0);
 	propsetNeutral->SetName("Track propagator for neutral particles");
 	propsetNeutral->SetMaxR(1000);
 	propsetNeutral->SetMaxZ(1000);
@@ -434,10 +475,9 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 
 				if( Length<MCTracksMinLength ) continue; // Skip small tracks
 				if( Length<=0) continue; // Protectin against bad parameters = 0      ??
-				//  if( PID>=1000010020 ) continue;  //Mute the heavy hygen nuclea and so on.
+				if( PID>=1000010020 ) continue;  //Mute the heavy hygen nuclea and so on.
 				if( PT < PTCut) continue;
 
-				// 
 				if(charge!=0 && KineticE >= MCTracksLowEThresh){
 
 					switch(PID){
@@ -503,80 +543,81 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 
 					track = new TEveTrack(ChargedTrack, propsetCharged);
 
-					TEvePathMark* pm1 = new TEvePathMark(TEvePathMark::kDaughter);
-					TEvePathMark* pm2 = new TEvePathMark(TEvePathMark::kDaughter);
+					// TEvePathMark* pm1 = new TEvePathMark(TEvePathMark::kDaughter);
+					// TEvePathMark* pm2 = new TEvePathMark(TEvePathMark::kDaughter);
 
 					TEvePathMark* pm3 = new TEvePathMark(TEvePathMark::kDecay);
 
 
-					if( (Vz<2350 && Vz>-2350 && GenRadius<1810) && (Ez>2350 || Ez<-2350 || EndRadius>1810) )   // if cross the board of TPC
-					{
-						std::string SETHitCollection = "SETCollection";
-						try{
-							LCCollection* col = evt->getCollection( SETHitCollection ) ;
-							int nHits = col->getNumberOfElements();
-							int count = 0;
-							for(int j=0; j<nHits; j++)
-							{
-								SimTrackerHit* hit = dynamic_cast<SimTrackerHit*>( col->getElementAt(j) );
-								MCParticle* hitMCPart = dynamic_cast<MCParticle*>( hit->getMCParticle());
-								if(hitMCPart==part && count==0)
-								{
-									TEveVector SetHit(hit->getPosition()[0]/10.0, hit->getPosition()[1]/10.0, hit->getPosition()[2]/10.0);
-									pm1->fV.Set(SetHit);
-									track->AddPathMark(*pm1);
-									count=1;
-								}
-							}
-						}catch (lcio::DataNotAvailableException zero) { }
+					// if( (Vz<2350 && Vz>-2350 && GenRadius<1810) && (Ez>2350 || Ez<-2350 || EndRadius>1810) )   // if cross the board of TPC
+					// {
+					// 	std::string SETHitCollection = "SETCollection";
+					// 	try{
+					// 		LCCollection* col = evt->getCollection( SETHitCollection ) ;
+					// 		int nHits = col->getNumberOfElements();
+					// 		cout << nHits << endl;
+					// 		int count = 0;
+					// 		for(int j=0; j<nHits; j++)
+					// 		{
+					// 			SimTrackerHit* hit = dynamic_cast<SimTrackerHit*>( col->getElementAt(j) );
+					// 			MCParticle* hitMCPart = dynamic_cast<MCParticle*>( hit->getMCParticle());
+					// 			if(hitMCPart==part && count==0)
+					// 			{
+					// 				TEveVector SetHit(hit->getPosition()[0]/10.0, hit->getPosition()[1]/10.0, hit->getPosition()[2]/10.0);
+					// 				pm1->fV.Set(SetHit);
+					// 				track->AddPathMark(*pm1);
+					// 				count=1;
+					// 			}
+					// 		}
+					// 	}
+					// 	catch (lcio::DataNotAvailableException zero) { }
+					// }
 
-					}
 
+					// if ( (Vz<3381.6 && Vz>-3381.6 && GenRadius<3973.6) && (Ez>3381.6 || Ez<-3381.6 || EndRadius > 3973.6) )   // if end outside the Calo
+					// {
+					// 	float MuonCaloHitDis = 0;
+					// 	float EndPointDisMax = 0;
+					// 	float Xmax = 0;
+					// 	float Ymax = 0;
+					// 	float Zmax = 0;
 
-					if ( (Vz<3381.6 && Vz>-3381.6 && GenRadius<3973.6) && (Ez>3381.6 || Ez<-3381.6 || EndRadius > 3973.6) )   // if end outside the Calo
-					{
-						float MuonCaloHitDis = 0;
-						float EndPointDisMax = 0;
-						float Xmax = 0;
-						float Ymax = 0;
-						float Zmax = 0;
+					// 	const std::vector< std::string >* strVec = evt->getCollectionNames() ;
 
-						const std::vector< std::string >* strVec = evt->getCollectionNames() ;
+					// 	for( std::vector<std::string>::const_iterator  name2 = strVec->begin() ; name2 != strVec->end() ; name2++){
+					// 		try{
+					// 			LCCollection* col = evt->getCollection( *name2 ) ;
+					// 			string SubD (*name2, 0, 4);
+					// 			if ( SubD=="Muon" )
+					// 			{
+					// 				int nMuonHits = col->getNumberOfElements();
+					// 				for(int i = 0; i<nMuonHits; i++)
+					// 				{
+					// 					SimCalorimeterHit* hit11 = dynamic_cast<SimCalorimeterHit*>( col->getElementAt(i) );
+					// 					MCParticle* hitMCPart11 = dynamic_cast<MCParticle*>( hit11->getParticleCont(0));
+					// 					if( hitMCPart11==part )
+					// 					{ 
+					// 						MuonCaloHitDis = sqrt(hit11->getPosition()[0]*hit11->getPosition()[0]+hit11->getPosition()[1]*hit11->getPosition()[1]+hit11->getPosition()[2]*hit11->getPosition()[2]); 
+					// 						if(MuonCaloHitDis>EndPointDisMax)
+					// 						{
+					// 							EndPointDisMax = MuonCaloHitDis;
+					// 							Xmax = hit11->getPosition()[0]/10.0;
+					// 							Ymax = hit11->getPosition()[1]/10.0;
+					// 							Zmax = hit11->getPosition()[2]/10.0;
+					// 						}
+					// 					}
+					// 				}
+					// 			}
+					// 		}catch (lcio::DataNotAvailableException zero) { }
+					// 	}
 
-						for( std::vector<std::string>::const_iterator  name2 = strVec->begin() ; name2 != strVec->end() ; name2++){
-							try{
-								LCCollection* col = evt->getCollection( *name2 ) ;
-								string SubD (*name2, 0, 4);
-								if ( SubD=="Muon" )
-								{
-									int nMuonHits = col->getNumberOfElements();
-									for(int i = 0; i<nMuonHits; i++)
-									{
-										SimCalorimeterHit* hit11 = dynamic_cast<SimCalorimeterHit*>( col->getElementAt(i) );
-										MCParticle* hitMCPart11 = dynamic_cast<MCParticle*>( hit11->getParticleCont(0));
-										if( hitMCPart11==part )
-										{ 
-											MuonCaloHitDis = sqrt(hit11->getPosition()[0]*hit11->getPosition()[0]+hit11->getPosition()[1]*hit11->getPosition()[1]+hit11->getPosition()[2]*hit11->getPosition()[2]); 
-											if(MuonCaloHitDis>EndPointDisMax)
-											{
-												EndPointDisMax = MuonCaloHitDis;
-												Xmax = hit11->getPosition()[0]/10.0;
-												Ymax = hit11->getPosition()[1]/10.0;
-												Zmax = hit11->getPosition()[2]/10.0;
-											}
-										}
-									}
-								}
-							}catch (lcio::DataNotAvailableException zero) { }
-						}
-
-						TEveVector MuonFarHit(Xmax, Ymax, Zmax);
-						if(EndPointDisMax>10)
-						{
-							pm2->fV.Set(MuonFarHit);
-							track->AddPathMark(*pm2);
-						}
-					}
+					// 	TEveVector MuonFarHit(Xmax, Ymax, Zmax);
+					// 	if(EndPointDisMax>10)
+					// 	{
+					// 		pm2->fV.Set(MuonFarHit);
+					// 		track->AddPathMark(*pm2);
+					// 	}
+					// }
 
 					pm3->fV.Set(End);
 					track->AddPathMark(*pm3);
@@ -611,7 +652,7 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 									 currCompound = cpdGamma;
 									 break;
 
-							case 2112:
+							case 2112:  // 中性子
 									 TrType = kNeutron;
 									 currCompound = cpdNeutrons;
 									 break;
@@ -621,7 +662,7 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 									 currCompound = cpdKlongs;
 									 break;
 
-							default:    //All neutral hadrons
+							default:    //All neutral hadrons 中性ハドロン
 									 TrType = kNeutralHad;
 									 currCompound = cpdNeutralHad;
 									 break;
@@ -693,9 +734,9 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 			MCTracks->AddElement(cpdKlongs);
 			MCTracks->AddElement(cpdIon);
 
-			cpdLowE->SetRnrSelfChildren(kFALSE, kFALSE);
-			cpdNeutralHad->SetRnrSelfChildren(kFALSE, kFALSE);
-			cpdNeutrons->SetRnrSelfChildren(kFALSE, kFALSE);
+			cpdLowE->SetRnrSelfChildren(false, false);
+			cpdNeutralHad->SetRnrSelfChildren(false, false);
+			cpdNeutrons->SetRnrSelfChildren(false, false);
 
 		} // if MCTrack collection
 
@@ -704,7 +745,8 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 	bool FlagDraw;
 	for (TEveElement::List_i itt=MCTracks->BeginChildren(); itt!=MCTracks->EndChildren(); itt++){
 		std::string colname = (*itt)->GetElementName();
-		if(colname!="NeutralHad" && colname!="Neutrons"){
+		if(colname!= "LowE" && colname!="NeutralHad" && colname!="Neutrons"){
+			// MCParticleDisplayFlagマップの中にcolnameがあった場合、そのDraw値をFlagDrawに代入する。
 			if(_MCParticleDisplayFlag.find(colname)!=_MCParticleDisplayFlag.end()) FlagDraw=_MCParticleDisplayFlag[colname];
 			else FlagDraw = true;
 			(*itt)->SetRnrSelfChildren(FlagDraw, FlagDraw);

@@ -144,9 +144,13 @@ int main(int argc, char** argv) {
     b_next->Connect("Clicked()","Event",ev,"Next()");
     bframe1->AddFrame(b_next,new TGLayoutHints(kLHintsCenterX));
 
+    TGTextButton* b_prev = new TGTextButton(bframe1,"Prev");
+    b_prev->Connect("Clicked()","Event",ev,"Prev()");
+    bframe1->AddFrame(b_prev,new TGLayoutHints(kLHintsCenterX));
+
     // exitボタン。
     TGTextButton* b_exit = new TGTextButton(bframe1,"Exit","gApplication->Terminate(0)");
-    bframe1->AddFrame(b_exit,new TGLayoutHints(kLHintsLeft));
+    bframe1->AddFrame(b_exit,new TGLayoutHints(kLHintsRight));
 
     // display preparation done.
     frm->MapSubwindows();

@@ -22,6 +22,8 @@ class Event : public TObject {
     // ~Event() {};
     void OpenFile();
     void Next();
+    void Prev();
+    void loadEvent();
     void printEventInfo(LCEvent* evt);
     void printMCParticlesInfo(const EVENT::LCCollection* col);
     void loadMCparticlesEvent();
@@ -34,11 +36,15 @@ class Event : public TObject {
     TGFileDialog* _fdialog; 
     TGFileInfo* _fileinfo;
     LCReader* _lcReader;
+    int _runNumber = -1;
+    int _eventNumber = 0;
+    int _numberOfEvents;
     LCEvent* _evt;
 
     bool _MCPDraw = true;
     bool _MCPChildDraw = true;
     std::map <std::string, int> _MCParticleDisplayFlag;
+    TEveElementList* _pMCParticle = 0;
 
   ClassDef(Event,1) // とりあえず書いておいたほうがいいらしい。
 };
