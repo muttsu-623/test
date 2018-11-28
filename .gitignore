@@ -5,3 +5,5 @@
 Dict.***
 run
 *.slcio
+.idea/*
+cmake-build-debug/*
