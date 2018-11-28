@@ -42,14 +42,54 @@ int main(int argc, char** argv) {
     viewer->AddScene(gEve->GetEventScene());
     gEve->GetViewers()->AddElement(viewer);
 
+    TEveGeoShape* vtx = new TEveGeoShape;
+    vtx->SetShape(new TGeoTube(6.500000000, 6.549392000, 14.50000000)); // rmin, rmax, dz
+    vtx->SetNSegments(16); // number of vertices
+    vtx->SetMainColor(kYellow);
+    vtx->SetMainAlpha(0.5);
+    vtx->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(vtx);
+
+    TEveGeoShape* sit1 = new TEveGeoShape;
+    sit1->SetShape(new TGeoTube(15.29, 15.44, 36.8)); // rmin, rmax, dz
+    sit1->SetNSegments(10); // number of vertices
+    sit1->SetMainColor(kYellow);
+    sit1->SetMainAlpha(0.5);
+    sit1->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(sit1);
+
+    TEveGeoShape* sit2 = new TEveGeoShape;
+    sit2->SetShape(new TGeoTube(29.99, 30.14, 64.4)); // rmin, rmax, dz
+    sit2->SetNSegments(19); // number of vertices
+    sit2->SetMainColor(kYellow);
+    sit2->SetMainAlpha(0.5);
+    sit2->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(sit2);
+
     // define a tube (cylinder)
     TEveGeoShape* tcp = new TEveGeoShape;
-    tcp->SetShape(new TGeoTube(3.290000000e+02, 1.808000000e+03, 2.350000000e+03)); // rmin, rmax, dz
+    tcp->SetShape(new TGeoTube(3.290000000e+01, 1.808000000e+02, 2.350000000e+02)); // rmin, rmax, dz
     tcp->SetNSegments(100); // number of vertices
     tcp->SetMainColor(kYellow);
     tcp->SetMainAlpha(0.5);
     tcp->RefMainTrans().SetPos(0, 0, 0); // set position
     gEve->AddElement(tcp);
+
+    TEveGeoShape* eCal = new TEveGeoShape;
+    eCal->SetShape(new TGeoTube(1.847415655e+02, 2.028e+02, 2.350000000e+02)); // rmin, rmax, dz
+    eCal->SetNSegments(100); // number of vertices
+    eCal->SetMainColor(kGreen);
+    eCal->SetMainAlpha(0.5);
+    eCal->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(eCal);
+
+    TEveGeoShape* hCal = new TEveGeoShape;
+    hCal->SetShape(new TGeoTube(2.058000000e+02, 3.39546e+02, 2.350000000e+02)); // rmin, rmax, dz
+    hCal->SetNSegments(100); // number of vertices
+    hCal->SetMainColor(kBlue);
+    hCal->SetMainAlpha(0.5);
+    hCal->RefMainTrans().SetPos(0, 0, 0); // set position
+    gEve->AddElement(hCal);
 
     // xAxis, yAxis, zAxis
     TEveArrow* xAxis = new TEveArrow(6000., 0., 0., 0., 0., 0.);
