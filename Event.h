@@ -7,6 +7,7 @@
 #include "lcio.h"
 #include "IO/LCReader.h"
 #include "EVENT/LCEvent.h"
+#include "EVENT/LCCollection.h"
 
 class TEveElementList;
 class TEveTrackList;
@@ -28,7 +29,9 @@ class Event : public TObject {
     void printMCParticlesInfo(const EVENT::LCCollection* col);
     void loadMCparticlesEvent();
     TEveElementList* BuildMCParticles( LCEvent *evt );
-
+    void printReconstructedParticles( const EVENT::LCCollection* col );
+    void loadReconstractedEvent(EVENT::LCCollection* col, std::string name);
+    TEveElementList* BuildPFOs(EVENT::LCCollection* col, std::string name );
   private :
     int _ev;
     int _ev_max;
@@ -40,11 +43,15 @@ class Event : public TObject {
     int _eventNumber = 0;
     int _numberOfEvents;
     LCEvent* _evt;
+    EVENT::LCCollection* _col;
 
     bool _MCPDraw = true;
     bool _MCPChildDraw = true;
+    bool _PFODraw = true;
+    bool _PFOChildDraw = true;
     std::map <std::string, int> _MCParticleDisplayFlag;
     TEveElementList* _pMCParticle = 0;
+    TEveElementList* _pPFOs = 0;
 
   ClassDef(Event,1) // とりあえず書いておいたほうがいいらしい。
 };
