@@ -17,7 +17,12 @@
         "type_traits": "cpp",
         "typeinfo": "cpp",
         "algorithm": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "string": "cpp",
+        "__string": "cpp",
+        "memory": "cpp",
+        "ostream": "cpp"
     },
-    "workbench.editor.enablePreview": false
+    "workbench.editor.enablePreview": false,
+    "C_Cpp.errorSquiggles": "Enabled"
 }

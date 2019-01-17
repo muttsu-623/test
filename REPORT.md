@@ -6,16 +6,24 @@ This is my reaech report. I write what I did and what I will do.
 
 ## Daily
 
-### Final
-- [ ] dicover why reconstraction is failed.
+### Want to do
+- [ ] Toggle displaying of MCParticle and Reconstructed.
+- [ ] Divide files.
+- [ ] Display MCParticles which their parent is top or W.
+
+### 20190109
+- [x] Display jets
+
+### 20181212
+- [x] Display MCParticle and Reconstructed.
 
 ### 20181030
 
 ### 20181011
-- [ ] Find way to be eable to use LCIO, but I couldn't
+- [x] Find way to be eable to use LCIO, but I couldn't
 
 ### 20181010
-- [ ] Explain particles in a display.
+- [x] Explain particles in a display.
     * I tried it but there was a error so I couldn't display them.
 
 ### 20181009

@@ -77,7 +77,7 @@ void Event::OpenFile() {
 }
 
 void Event::Next() {
-	if (_eventNumber >= _lcReader->getNumberOfEvents()) 
+	if (_eventNumber >= _firstEventNum + _numberOfEvents) 
 	{
 		cout << "Already displayed last event!!" << endl;
 		return;
@@ -88,7 +88,7 @@ void Event::Next() {
 }
 
 void Event::Prev() {
-	if (_eventNumber == 0) 
+	if (_eventNumber == _firstEventNum)
 	{
 		cout << "Already displayed first event!!" << endl;
 		return;
@@ -99,16 +99,13 @@ void Event::Prev() {
 }
 
 void Event::loadEvent() {
-	if (_runNumber == -1) 
-	{
-    _evt = _lcReader->readNextEvent();
+	if (_runNumber == -1) {
+		_evt = _lcReader->readNextEvent();
 		_runNumber = _evt->getRunNumber();
-		_eventNumber = _evt->getEventNumber();
-	} 
-	else 
-	{
-		_evt = _lcReader->readEvent(_runNumber, _eventNumber);
+		_firstEventNum = _evt->getEventNumber();
+		_eventNumber = _firstEventNum;
 	}
+	else _evt = _lcReader->readEvent(_runNumber, _eventNumber);
 
 	if (_evt != 0) 
 	{
@@ -123,8 +120,12 @@ void Event::loadEvent() {
                 // printMCParticlesInfo(_col);
                 loadMCparticlesEvent();
             }
-			else if (*name == "PandoraPFOs") {
-				// printReconstructedParticles(_col);
+			// else 
+			// if (*name == "PandoraPFOs") {
+			// 	// printReconstructedParticles(_col);
+			// 	loadReconstractedEvent(_col, *name);
+			// }
+			else if (*name == "RefinedJets") {
 				loadReconstractedEvent(_col, *name);
 			}
         }
@@ -374,6 +375,20 @@ void Event::loadReconstractedEvent(EVENT::LCCollection* col, std::string name) {
 	gEve->AddElement(_pPFOs);
 }
 
+void Event::loadJets(EVENT::LCCollection* col, std::string name) {
+	if(_jets)
+    {
+		_JetsDraw = _jets->GetRnrSelf();
+		_JetsChildDraw = _jets->GetRnrChildren();
+		_jets->DestroyElements();
+        _jets->Destroy();
+    }
+	_jets = RecoJets( col, name );
+	_jets->SetRnrSelfChildren(_JetsDraw, _JetsChildDraw);
+	_jets->SetName("RefinedJets");
+	gEve->AddElement(_jets);
+}
+
 using namespace lcio;
 using namespace std;
 
@@ -428,7 +443,11 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 	double MCTracksLowEThresh = 0.1;
 
 	// 粒子の種類
-	enum ETrType { kAucune=0, kElectron, kPositron, kMuonP, kMuonN, kPionP, kPionN, kKaonP, kKaonN, kProton, kNeutron, kKlong, kGamma, kIon, kNeutralHad, kNeutrino, kLowE, kLast};
+	enum ETrType { 
+		kAucune=0, 
+		kElectron, kPositron, kMuonP, kMuonN, kPionP, kPionN, kKaonP, kKaonN, kProton, kNeutron, kKlong, kGamma, kIon, kNeutralHad, kNeutrino, kLowE, 
+		kBottomP, kBottomN, kDownP, kDownN, kUpP, kUpN, kLast
+	};
 
 	// Displayのときのtrackのcolor, width, styleの設定
 	struct MCTrackDisplay {
@@ -455,7 +474,13 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 		{"Ion       ",   15, 1, 1},
 		{"NeutralHad",   5, 1, 1},
 		{"Neutrino  ",   7, 1, 1},
-		{"LowE      ",   15, 1, 1}
+		{"LowE      ",   15, 1, 1},
+		{"Bottom+      ",   kBlue, 2, 1},
+		{"Bottom-      ",   kBlue, 2, 1},
+		{"Down+        ",   kRed, 2, 1},
+		{"Down-        ",   kRed, 2, 1},
+		{"Up+          ",   kGreen, 2, 1},
+		{"Up-          ",   kGreen, 2, 1}
 	};
 
 
@@ -506,6 +531,15 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 
 	TEveTrackList* cpdNeutrinos = new TEveTrackList(MCTParams[kNeutrino].Name);
 	cpdNeutrinos->SetMainColor(MCTParams[kNeutrino].Color);
+
+	TEveTrackList* cpdBottoms = new TEveTrackList("Bottom");
+	cpdBottoms->SetMainColor(MCTParams[kBottomN].Color);
+
+	TEveTrackList* cpdDowns = new TEveTrackList("Down");
+	cpdDowns->SetMainColor(MCTParams[kDownN].Color);
+
+	TEveTrackList* cpdUps = new TEveTrackList("Up");
+	cpdUps->SetMainColor(MCTParams[kUpP].Color);
 
 	//Fix missing PIDs.
 	TDatabasePDG *pdgDB = TDatabasePDG::Instance();
@@ -579,6 +613,32 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 				PT = sqrt(px*px+py*py);
 				//	PT = energy;					//tmplate usage...
 
+				if (ParentNum > 0)
+				{
+					MCParticleVec mother = part->getParents();
+					MotherPID = mother[0]->getPDG();
+					MotherEnergy = mother[0]->getEnergy();
+					if (MotherPID == 6 || MotherPID == -6) {
+						cout << "The mother is t quark" << endl;
+						cout << PID << endl;
+						cout << endl;
+					} 
+					else if (MotherPID == 24 || MotherPID == -24) {
+						cout << "The mother is W boson" << endl;
+						cout << PID << endl;
+						cout << endl;
+					}
+					else continue;
+				}
+				else continue;
+
+				switch (PID) { 
+					case 94:
+					case 6:
+					case 21:	
+					continue;
+				}
+
 				if(PID == 22 && energy > 0.5)	//Only show the information for particle/gamma with energy > 0.5GeV
 				{	
 					MCParticleVec mother = part->getParents();
@@ -604,14 +664,43 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 				else displayedMCParticle++;
 
 
-				if( Length<MCTracksMinLength ) continue; // Skip small tracks
-				if( Length<=0) continue; // Protectin against bad parameters = 0      ??
+				// if( Length<MCTracksMinLength ) continue; // Skip small tracks
+				// if( Length<=0) continue; // Protectin against bad parameters = 0      ??
 				if( PID>=1000010020 ) continue;  //Mute the heavy hygen nuclea and so on.
-				if( PT < PTCut) continue;
+				// if( PT < PTCut) continue;
+
 
 				if(charge!=0 && KineticE >= MCTracksLowEThresh){
 
 					switch(PID){
+						case 1:
+							TrType = kDownN;
+							currCompound = cpdDowns;
+							break;
+
+						case -1:
+							TrType = kDownP;
+							currCompound = cpdDowns;
+							break;
+
+						case 2:
+							TrType = kUpP;
+							currCompound = cpdUps;
+							break;
+						case -2:
+							TrType = kUpN;
+							currCompound = cpdUps;
+							break;
+
+						case 5:
+							TrType = kBottomN;
+							currCompound = cpdBottoms;
+							break;
+						case -5:
+							TrType = kBottomP;
+							currCompound = cpdBottoms;
+							break;
+
 						case 11:
 							TrType = kElectron;
 							currCompound = cpdElectrons;
@@ -658,8 +747,8 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 							break;
 
 						default:
-							TrType = kIon; 
-							currCompound = cpdIon;
+							// TrType = kIon; 
+							// currCompound = cpdIon;
 							break;
 					}
 
@@ -674,9 +763,9 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 
 					track = new TEveTrack(ChargedTrack, propsetCharged);
 
-					TEvePathMark* pm3 = new TEvePathMark(TEvePathMark::kDecay);
-					pm3->fV.Set(End);
-					track->AddPathMark(*pm3);
+					// TEvePathMark* pm3 = new TEvePathMark(TEvePathMark::kDecay);
+					// pm3->fV.Set(End);
+					// track->AddPathMark(*pm3);
 
 
 				} 
@@ -691,39 +780,40 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 					   */
 					
 					// Non charged and low energy particle. But it's not neutrino.
-					if( KineticE < MCTracksLowEThresh && ! IsNeutrino(PID) )
-					{
-						TrType = kLowE;
-						currCompound = cpdLowE;
-					}else{
+					// if( KineticE < MCTracksLowEThresh && ! IsNeutrino(PID) )
+					// {
+					// 	TrType = kLowE;
+					// 	currCompound = cpdLowE;
+					// }else{
 
-						switch( abs(PID) ){
-							case  12:; case  14:; case  16:;    //Neutrinos
-									 TrType = kNeutrino;
-									 currCompound = cpdNeutrinos;
-									 break;
+					// 	switch( abs(PID) ){
+					// 		case  12:; case  14:; case  16:;    //Neutrinos
+					// 				 TrType = kNeutrino;
+					// 				 currCompound = cpdNeutrinos;
+					// 				 break;
 
-							case 22:    //Gammas
-									 TrType = kGamma;
-									 currCompound = cpdGamma;
-									 break;
+					// 		case 22:    //Gammas
+					// 				 TrType = kGamma;
+					// 				 currCompound = cpdGamma;
+					// 				 break;
 
-							case 2112:  // 中性子
-									 TrType = kNeutron;
-									 currCompound = cpdNeutrons;
-									 break;
+					// 		case 2112:  // 中性子
+					// 				 TrType = kNeutron;
+					// 				 currCompound = cpdNeutrons;
+					// 				 break;
 
-							case 130:
-									 TrType = kKlong;
-									 currCompound = cpdKlongs;
-									 break;
+					// 		case 130:
+					// 				 TrType = kKlong;
+					// 				 currCompound = cpdKlongs;
+					// 				 break;
 
-							default:    //All neutral hadrons 中性ハドロン
-									 TrType = kNeutralHad;
-									 currCompound = cpdNeutralHad;
-									 break;
-						}
-					}
+					// 		default:    //All neutral hadrons 中性ハドロン
+					// 				 TrType = kNeutralHad;
+					// 				 currCompound = cpdNeutralHad;
+					// 				 break;
+					// 	}
+					// }
+
 					if( TrType != kAucune )
 					{
 
@@ -776,23 +866,27 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 
 			//        currCompound->CloseCompound();
 
-			//        MCTracks->AddElement(cpdMother);
-			MCTracks->AddElement(cpdLowE);
-			MCTracks->AddElement(cpdNeutrinos);
-			MCTracks->AddElement(cpdGamma);
-			MCTracks->AddElement(cpdNeutralHad);
-			MCTracks->AddElement(cpdMuons);
-			MCTracks->AddElement(cpdPions);
-			MCTracks->AddElement(cpdElectrons);
-			MCTracks->AddElement(cpdChargedKaons);
-			MCTracks->AddElement(cpdProtons);
-			MCTracks->AddElement(cpdNeutrons);
-			MCTracks->AddElement(cpdKlongs);
-			MCTracks->AddElement(cpdIon);
+			// MCTracks->AddElement(cpdMother);
+			// MCTracks->AddElement(cpdLowE);
+			// MCTracks->AddElement(cpdNeutrinos);
+			// MCTracks->AddElement(cpdGamma);
+			// MCTracks->AddElement(cpdNeutralHad);
+			// MCTracks->AddElement(cpdMuons);
+			// MCTracks->AddElement(cpdPions);
+			// MCTracks->AddElement(cpdElectrons);
+			// MCTracks->AddElement(cpdChargedKaons);
+			// MCTracks->AddElement(cpdProtons);
+			// MCTracks->AddElement(cpdNeutrons);
+			// MCTracks->AddElement(cpdKlongs);
+			// MCTracks->AddElement(cpdIon);
 
-			cpdLowE->SetRnrSelfChildren(false, false);
-			cpdNeutralHad->SetRnrSelfChildren(false, false);
-			cpdNeutrons->SetRnrSelfChildren(false, false);
+			MCTracks->AddElement(cpdBottoms);
+			MCTracks->AddElement(cpdUps);
+			MCTracks->AddElement(cpdDowns);		
+
+			cpdLowE->SetRnrSelfChildren(true, true);
+			// cpdNeutralHad->SetRnrSelfChildren(false, false);
+			// cpdNeutrons->SetRnrSelfChildren(false, false);
 
 		} // if MCTrack collection
 
@@ -817,9 +911,15 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 TEveElementList* Event::BuildPFOs(EVENT::LCCollection* col, std::string name )
 {
 
-	std::cout<<"  Reconstructed particle collection: "<<name.c_str()<<std::endl;
-	std::cout<<"  Number of PFO: "<<col->getNumberOfElements()<<std::endl;
-	std::cout<<std::endl;
+	if (name == "PandoraPFOs") {
+		std::cout<<"  Reconstructed particle collection: "<<name.c_str()<<std::endl;
+		std::cout<<"  Number of PFO: "<<col->getNumberOfElements()<<std::endl;
+		std::cout<<std::endl;
+	} else if (name == "RefinedJets") {
+		std::cout<<"  Refined jets collection: "<<name.c_str()<<std::endl;
+		std::cout<<"  Number of jet: "<<col->getNumberOfElements()<<std::endl;
+		std::cout<<std::endl;
+	}
 	//	cout<<"HCALBarrelLength: "<<HCALBarrelLength<<endl;
 
 	TEveElementList  *RecoTracks = new TEveElementList();
@@ -929,221 +1029,431 @@ TEveElementList* Event::BuildPFOs(EVENT::LCCollection* col, std::string name )
 
 	try{
 
-		int nMCParticle =  col->getNumberOfElements();
-
 		TEveTrackList * currCompound = 0;
 
-		for(int i=0; i<nMCParticle; i++)
-		{
-			ReconstructedParticle* part =  dynamic_cast<ReconstructedParticle*>( col->getElementAt( i ) ) ;
+		// if (name == "PandoraPFOs") {
 
-			PID=0; ParentNum=0; DaughterNum=0;
-			charge=0; mass=0; energy=0;
-			px=0; py=0; pz=0; 
-			KineticE = 0; GenRadius = 0; EndRadius = 0;
+			int nReconstructedParticle =  col->getNumberOfElements();
 
-			px=part->getMomentum()[0];
-			py=part->getMomentum()[1];
-			pz=part->getMomentum()[2];
-			KineticE = sqrt(px*px+py*py+pz*pz);
-
-			if(part->getParticleIDs().size()>0)
+			for(int i=0; i<nReconstructedParticle; i++)
 			{
-				PID = part->getParticleIDs()[0]->getPDG(); //First one of the PID lists
-			}
-			else
-			{
-				PID = -99; 
-				PID = part->getType();
-				//cout<<"PID not identified. Please check your data file."<<endl;	
-			}
+				ReconstructedParticle* part =  dynamic_cast<ReconstructedParticle*>( col->getElementAt( i ) ) ;
 
-			charge=part->getCharge();
-			mass=part->getMass();
-			energy=part->getEnergy();
-			Vtx = part->getReferencePoint();
+				PID=0; ParentNum=0; DaughterNum=0;
+				charge=0; mass=0; energy=0;
+				px=0; py=0; pz=0; 
+				KineticE = 0; GenRadius = 0; EndRadius = 0;
 
-			if(part->getClusters().size()>0)
-			{
-				End = part->getClusters()[0]->getPosition();	//Test 
-				/*
-				   CalorimeterHitVec ClusterHits = part->getClusters()[0]->getCalorimeterHits();
-				   if(ClusterHits.size() > 0) End = ClusterHits[0]->getPosition();
-				   */
-			}
-			else		// reserved for where cluster is dropped
-			{
-				End = part->getMomentum() ;
-				End *= 3000.0/KineticE ;
-			}
+				px=part->getMomentum()[0];
+				py=part->getMomentum()[1];
+				pz=part->getMomentum()[2];
+				KineticE = sqrt(px*px+py*py+pz*pz);
 
-			int PFOshowhit = 1;
-
-			Vtx *= MCPartUnit;
-			End *= MCPartUnit;
-
-			TEveTrack* track = 0;
-
-			ERecType TrType = kRecAucune;
-			
-			/*	//used for which has not pass PID
-			if(PID == 0) 
-			{
-				if(charge > 0) PID = 211; 
-				else if(charge < 0) PID = -211; 
-				else PID = 22; 
-			}
-			*/
-
-			if(charge!=0 && KineticE >= MCTracksLowEThresh){
-
-				switch(PID){
-					case 11:
-						TrType = kElectron;
-						currCompound = cpdElectrons;
-						break;
-
-					case -11:
-						TrType = kPositron;
-						currCompound = cpdElectrons;
-						break;
-
-					case 13:
-						TrType = kMuonN;
-						currCompound = cpdMuons;
-						break;	
-
-					case -13:
-						TrType = kMuonP;
-						currCompound = cpdMuons;
-						break;
-
-					case 211:
-						TrType = kPionP;
-						currCompound = cpdPions;
-						break;	
-
-					case -211:
-						TrType = kPionN;
-						currCompound = cpdPions;
-						break;
-
-					case 321:
-						TrType = kKaonP;
-						currCompound = cpdChargedKaons;
-						break;
-
-					case -321:
-						TrType = kKaonN;
-						currCompound = cpdChargedKaons;
-						break;
-
-					case 2212:
-						TrType = kProton;
-						currCompound = cpdProtons;
-						break; 
-
-					default:
-						TrType = kIonP;
-						if(charge > 0 ) currCompound = cpdIonP;
-						else if(charge < 0) currCompound = cpdIonN;
-						break;
-
-				}
-
-				TEveRecTrack* ChargedTrack = new TEveRecTrack();
-				ChargedTrack->fV.Set(Vtx);
-				ChargedTrack->fP.Set(px, py, pz);
-				ChargedTrack->fSign = charge;
-
-				track = new TEveTrack(ChargedTrack, propsetCharged);
-
-				if(currCompound != cpdMuons)	//Any track besides Muon track will be end at the first calorimeter hit it corresponding to 
+				if(part->getParticleIDs().size()>0)
 				{
-					TEvePathMark* pm = new TEvePathMark(TEvePathMark::kDecay);
-					pm->fV.Set(End);
-					track->AddPathMark( *pm );
-				}
-
-			} 
-			else 
-			{
-
-				if( KineticE < MCTracksLowEThresh )
-				{
-					TrType = kLowE;
-					currCompound = cpdLowE;
+					PID = part->getParticleIDs()[0]->getPDG(); //First one of the PID lists
 				}
 				else
 				{
-
-					switch( abs(PID) )
-					{
-						case  12:; case  14:; case  16:;    //Neutrinos	actually never be reconstructed in ILD I guess
-								 TrType = kRecAucune;
-								 currCompound = cpdNeutralHad;
-								 break;
-
-						case 22:    
-								 TrType = kGamma;
-								 currCompound = cpdRecGamma;
-								 break;
-
-						case 2112:
-								 TrType = kNeutron;
-								 currCompound = cpdNeutrons;		
-								 break;
-
-						case 130:
-								 TrType = kKlong;
-								 currCompound = cpdKlongs;
-								 break;
-
-						default:    
-								 TrType = kNeutralHad;	
-								 currCompound = cpdNeutralHad;
-								 break;
-					}
+					PID = -99; 
+					PID = part->getType();
+					//cout<<"PID not identified. Please check your data file."<<endl;	
 				}
-				if( TrType != kRecAucune )
+
+				charge=part->getCharge();
+				mass=part->getMass();
+				energy=part->getEnergy();
+				Vtx = part->getReferencePoint();
+
+				if(part->getClusters().size()>0)
+				{
+					End = part->getClusters()[0]->getPosition();	//Test 
+					/*
+					CalorimeterHitVec ClusterHits = part->getClusters()[0]->getCalorimeterHits();
+					if(ClusterHits.size() > 0) End = ClusterHits[0]->getPosition();
+					*/
+				}
+				else		// reserved for where cluster is dropped
+				{
+					End = part->getMomentum() ;
+					End *= 3000.0/KineticE ;
+				}
+
+				int PFOshowhit = 1;
+
+				Vtx *= MCPartUnit;
+				End *= MCPartUnit;
+
+				TEveTrack* track = 0;
+
+				ERecType TrType = kRecAucune;
+				
+				if(charge!=0 && KineticE >= MCTracksLowEThresh){
+
+					switch(PID){
+						case 11:
+							TrType = kElectron;
+							currCompound = cpdElectrons;
+							break;
+
+						case -11:
+							TrType = kPositron;
+							currCompound = cpdElectrons;
+							break;
+
+						case 13:
+							TrType = kMuonN;
+							currCompound = cpdMuons;
+							break;	
+
+						case -13:
+							TrType = kMuonP;
+							currCompound = cpdMuons;
+							break;
+
+						case 211:
+							TrType = kPionP;
+							currCompound = cpdPions;
+							break;	
+
+						case -211:
+							TrType = kPionN;
+							currCompound = cpdPions;
+							break;
+
+						case 321:
+							TrType = kKaonP;
+							currCompound = cpdChargedKaons;
+							break;
+
+						case -321:
+							TrType = kKaonN;
+							currCompound = cpdChargedKaons;
+							break;
+
+						case 2212:
+							TrType = kProton;
+							currCompound = cpdProtons;
+							break; 
+
+						default:
+							TrType = kIonP;
+							if(charge > 0 ) currCompound = cpdIonP;
+							else if(charge < 0) currCompound = cpdIonN;
+							break;
+
+					}
+
+					TEveRecTrack* ChargedTrack = new TEveRecTrack();
+					ChargedTrack->fV.Set(Vtx);
+					ChargedTrack->fP.Set(px, py, pz);
+					ChargedTrack->fSign = charge;
+
+					track = new TEveTrack(ChargedTrack, propsetCharged);
+
+					if(currCompound != cpdMuons)	//Any track besides Muon track will be end at the first calorimeter hit it corresponding to 
+					{
+						TEvePathMark* pm = new TEvePathMark(TEvePathMark::kDecay);
+						pm->fV.Set(End);
+						track->AddPathMark( *pm );
+					}
+				} 
+				else 
 				{
 
-					TEveRecTrack* NeutralTrack = new TEveRecTrack();
-					NeutralTrack->fV.Set(Vtx);
-					NeutralTrack->fP.Set(px, py, pz);
-					NeutralTrack->fSign = charge;
+					if( KineticE < MCTracksLowEThresh )
+					{
+						TrType = kLowE;
+						currCompound = cpdLowE;
+					}
+					else
+					{
 
-					track = new TEveTrack(NeutralTrack, propsetNeutral);
+						switch( abs(PID) )
+						{
+							case  12:; case  14:; case  16:;    //Neutrinos	actually never be reconstructed in ILD I guess
+									TrType = kRecAucune;
+									currCompound = cpdNeutralHad;
+									break;
 
-					TEvePathMark *pm = PathMarkEndTrackDecay(Vtx, End);
-					track->AddPathMark(*pm);
+							case 22:    
+									TrType = kGamma;
+									currCompound = cpdRecGamma;
+									break;
+
+							case 2112:
+									TrType = kNeutron;
+									currCompound = cpdNeutrons;		
+									break;
+
+							case 130:
+									TrType = kKlong;
+									currCompound = cpdKlongs;
+									break;
+
+							default:    
+									TrType = kNeutralHad;	
+									currCompound = cpdNeutralHad;
+									break;
+						}
+					}
+					if( TrType != kRecAucune )
+					{
+
+						TEveRecTrack* NeutralTrack = new TEveRecTrack();
+						NeutralTrack->fV.Set(Vtx);
+						NeutralTrack->fP.Set(px, py, pz);
+						NeutralTrack->fSign = charge;
+
+						track = new TEveTrack(NeutralTrack, propsetNeutral);
+
+						// TEvePathMark *pm = PathMarkEndTrackDecay(Vtx, End);
+						// track->AddPathMark(*pm);
+					}
+
 				}
 
+				if(track && currCompound)
+				{
+					track->SetName(Form("Track %d", i));    // i = tracknum
+					track->SetLineWidth(PFOParams[TrType].Width);
+					track->SetLineColor(PFOParams[TrType].Color);
+					track->SetLineStyle(PFOParams[TrType].Style);
+					track->SetSmooth(kTRUE);
+					track->SetTitle(Form("Reconstructed PFOs: %s\n"
+								"Track No.=%d\n""Charge=%f, PID=%d\n"
+								"Energy=%f\n"
+								"Vtx position= (%.3f, %.3f, %.3f)\n"
+								"Cluster pos = (%.3f, %.3f, %.3f)\n"
+								"3-momentum = (%.3f, %.3f, %.3f)",
+								name.c_str(), i, charge, PID, energy,
+								10*Vtx[0], 10*Vtx[1], 10*Vtx[2], 10*End[0], 10*End[1], 10*End[2], px, py, pz));
+
+					currCompound->AddElement(track);
+				}
+
+				currCompound->IncDenyDestroy();
+				currCompound->MakeTracks();
+
 			}
 
-			if(track && currCompound)
-			{
-				track->SetName(Form("Track %d", i));    // i = tracknum
-				track->SetLineWidth(PFOParams[TrType].Width);
-				track->SetLineColor(PFOParams[TrType].Color);
-				track->SetLineStyle(PFOParams[TrType].Style);
-				track->SetSmooth(kTRUE);
-				track->SetTitle(Form("Reconstructed PFOs: %s\n"
-							"Track No.=%d\n""Charge=%f, PID=%d\n"
-							"Energy=%f\n"
-							"Vtx position= (%.3f, %.3f, %.3f)\n"
-							"Cluster pos = (%.3f, %.3f, %.3f)\n"
-							"3-momentum = (%.3f, %.3f, %.3f)",
-							name.c_str(), i, charge, PID, energy,
-							10*Vtx[0], 10*Vtx[1], 10*Vtx[2], 10*End[0], 10*End[1], 10*End[2], px, py, pz));
+		// } else if (name == "RefinedJets") {
 
-				currCompound->AddElement(track);
-			}
+		// 	int NJets = col->getNumberOfElements();
+		// 	int colorindex = 0;
 
-			currCompound->IncDenyDestroy();
-			currCompound->MakeTracks();
+		// 	for (int i=0; i < NJets; i++) { 
+			
+		// 		ReconstructedParticle * currJet = dynamic_cast<ReconstructedParticle*>( col->getElementAt(i) );
+		// 		int NPart = currJet->getParticles().size();
 
-		}
+		// 		colorindex = i + 2; 
+		// 		if(colorindex == 5) colorindex = 94;
+		
+
+		// 		for(int j=0; j < NPart; j++) 
+		// 		{
+		// 			ReconstructedParticle * part = currJet->getParticles()[j];
+
+		// 			PID=0; ParentNum=0; DaughterNum=0;
+		// 			charge=0; mass=0; energy=0;
+		// 			px=0; py=0; pz=0; 
+		// 			KineticE = 0; GenRadius = 0; EndRadius = 0;
+
+		// 			px=part->getMomentum()[0];
+		// 			py=part->getMomentum()[1];
+		// 			pz=part->getMomentum()[2];
+		// 			KineticE = sqrt(px*px+py*py+pz*pz);
+
+		// 			if(part->getParticleIDs().size()>0)
+		// 			{
+		// 				PID = part->getParticleIDs()[0]->getPDG(); //First one of the PID lists
+		// 			}
+		// 			else
+		// 			{
+		// 				PID = -99; 
+		// 				PID = part->getType();
+		// 				//cout<<"PID not identified. Please check your data file."<<endl;	
+		// 			}
+
+		// 			charge=part->getCharge();
+		// 			mass=part->getMass();
+		// 			energy=part->getEnergy();
+		// 			Vtx = part->getReferencePoint();
+
+		// 			if(part->getClusters().size()>0)
+		// 			{
+		// 				End = part->getClusters()[0]->getPosition();	//Test 
+		// 				/*
+		// 				CalorimeterHitVec ClusterHits = part->getClusters()[0]->getCalorimeterHits();
+		// 				if(ClusterHits.size() > 0) End = ClusterHits[0]->getPosition();
+		// 				*/
+		// 			}
+		// 			else		// reserved for where cluster is dropped
+		// 			{
+		// 				End = part->getMomentum() ;
+		// 				End *= 3000.0/KineticE ;
+		// 			}
+
+		// 			int PFOshowhit = 1;
+
+		// 			Vtx *= MCPartUnit;
+		// 			End *= MCPartUnit;
+
+		// 			TEveTrack* track = 0;
+
+		// 			ERecType TrType = kRecAucune;
+					
+		// 			if(charge!=0 && KineticE >= MCTracksLowEThresh){
+
+		// 				switch(PID){
+		// 					case 11:
+		// 						TrType = kElectron;
+		// 						currCompound = cpdElectrons;
+		// 						break;
+
+		// 					case -11:
+		// 						TrType = kPositron;
+		// 						currCompound = cpdElectrons;
+		// 						break;
+
+		// 					case 13:
+		// 						TrType = kMuonN;
+		// 						currCompound = cpdMuons;
+		// 						break;	
+
+		// 					case -13:
+		// 						TrType = kMuonP;
+		// 						currCompound = cpdMuons;
+		// 						break;
+
+		// 					case 211:
+		// 						TrType = kPionP;
+		// 						currCompound = cpdPions;
+		// 						break;	
+
+		// 					case -211:
+		// 						TrType = kPionN;
+		// 						currCompound = cpdPions;
+		// 						break;
+
+		// 					case 321:
+		// 						TrType = kKaonP;
+		// 						currCompound = cpdChargedKaons;
+		// 						break;
+
+		// 					case -321:
+		// 						TrType = kKaonN;
+		// 						currCompound = cpdChargedKaons;
+		// 						break;
+
+		// 					case 2212:
+		// 						TrType = kProton;
+		// 						currCompound = cpdProtons;
+		// 						break; 
+
+		// 					default:
+		// 						TrType = kIonP;
+		// 						if(charge > 0 ) currCompound = cpdIonP;
+		// 						else if(charge < 0) currCompound = cpdIonN;
+		// 						break;
+
+		// 				}
+
+		// 				TEveRecTrack* ChargedTrack = new TEveRecTrack();
+		// 				ChargedTrack->fV.Set(Vtx);
+		// 				ChargedTrack->fP.Set(px, py, pz);
+		// 				ChargedTrack->fSign = charge;
+
+		// 				track = new TEveTrack(ChargedTrack, propsetCharged);
+
+		// 				if(currCompound != cpdMuons)	//Any track besides Muon track will be end at the first calorimeter hit it corresponding to 
+		// 				{
+		// 					TEvePathMark* pm = new TEvePathMark(TEvePathMark::kDecay);
+		// 					pm->fV.Set(End);
+		// 					track->AddPathMark( *pm );
+		// 				}
+
+		// 			} 
+		// 			else 
+		// 			{
+
+		// 				if( KineticE < MCTracksLowEThresh )
+		// 				{
+		// 					TrType = kLowE;
+		// 					currCompound = cpdLowE;
+		// 				}
+		// 				else
+		// 				{
+
+		// 					switch( abs(PID) )
+		// 					{
+		// 						case  12:; case  14:; case  16:;    //Neutrinos	actually never be reconstructed in ILD I guess
+		// 								TrType = kRecAucune;
+		// 								currCompound = cpdNeutralHad;
+		// 								break;
+
+		// 						case 22:    
+		// 								TrType = kGamma;
+		// 								currCompound = cpdRecGamma;
+		// 								break;
+
+		// 						case 2112:
+		// 								TrType = kNeutron;
+		// 								currCompound = cpdNeutrons;		
+		// 								break;
+
+		// 						case 130:
+		// 								TrType = kKlong;
+		// 								currCompound = cpdKlongs;
+		// 								break;
+
+		// 						default:    
+		// 								TrType = kNeutralHad;	
+		// 								currCompound = cpdNeutralHad;
+		// 								break;
+		// 					}
+		// 				}
+		// 				if( TrType != kRecAucune )
+		// 				{
+
+		// 					TEveRecTrack* NeutralTrack = new TEveRecTrack();
+		// 					NeutralTrack->fV.Set(Vtx);
+		// 					NeutralTrack->fP.Set(px, py, pz);
+		// 					NeutralTrack->fSign = charge;
+
+		// 					track = new TEveTrack(NeutralTrack, propsetNeutral);
+
+		// 					TEvePathMark *pm = PathMarkEndTrackDecay(Vtx, End);
+		// 					track->AddPathMark(*pm);
+		// 				}
+
+			// 		}
+
+			// 		if(track && currCompound)
+			// 		{
+			// 			track->SetName(Form("Track %d", i));    // i = tracknum
+			// 			track->SetLineWidth(PFOParams[TrType].Width);
+			// 			track->SetLineColor(colorindex);
+			// 			track->SetLineStyle(PFOParams[TrType].Style);
+			// 			track->SetSmooth(kTRUE);
+			// 			track->SetTitle(Form("Reconstructed PFOs: %s\n"
+			// 						"Track No.=%d\n""Charge=%f, PID=%d\n"
+			// 						"Energy=%f\n"
+			// 						"Vtx position= (%.3f, %.3f, %.3f)\n"
+			// 						"Cluster pos = (%.3f, %.3f, %.3f)\n"
+			// 						"3-momentum = (%.3f, %.3f, %.3f)",
+			// 						name.c_str(), i, charge, PID, energy,
+			// 						10*Vtx[0], 10*Vtx[1], 10*Vtx[2], 10*End[0], 10*End[1], 10*End[2], px, py, pz));
+
+			// 			currCompound->AddElement(track);
+			// 		}
+			// 		currCompound->IncDenyDestroy();
+			// 		currCompound->MakeTracks();
+
+			// 	}
+		// 	}
+		// }
 
 		RecoTracks->AddElement(cpdLowE);
 		RecoTracks->AddElement(cpdRecGamma);
@@ -1159,7 +1469,236 @@ TEveElementList* Event::BuildPFOs(EVENT::LCCollection* col, std::string name )
 		RecoTracks->AddElement(cpdIonN);
 
 		return RecoTracks;
-
 	}
 	catch(lcio::DataNotAvailableException zero) { }
+}
+
+#include "TEveCompound.h"
+#include "TEveBox.h"
+
+TEveElementList* Event::RecoJets(EVENT::LCCollection* col, std::string name ) {
+	TEveCompound *Jets = new TEveCompound();
+	Jets -> SetName(name.c_str());
+	int NJets = col->getNumberOfElements();
+	int NPart = 0;
+	int NTrk = 0; 
+	int NClu = 0; 
+	float HitX = 0;
+	float HitY = 0;
+	float HitZ = 0;
+	int colorindex = 0;
+	float ClusterHitSize = 1.0;
+
+	TVector3 HitScale(0.5*ClusterHitSize, 0.5*ClusterHitSize, 0.5*ClusterHitSize);
+
+	for(int i = 0; i < NJets; i++)
+	{
+		ReconstructedParticle * currJet = dynamic_cast<ReconstructedParticle*>( col->getElementAt(i) );
+		NPart = currJet->getParticles().size();
+//		colorindex = ((i%2)*50+5*i+GlobalRandomColorIndex*31)%105;
+//		colorindex = 51 + (i*9 + GlobalRandomColorIndex*15)%50 ;
+//		colorindex = i*9 + 51;
+		colorindex = i + 2; 
+		if(colorindex == 5) colorindex = 94;
+		TEveCompound *a_Jet = new TEveCompound();
+		a_Jet->SetName("aJet");
+		a_Jet->SetMainColor(colorindex);
+
+		for(int j = 0; j < NPart; j++)
+		{
+			ReconstructedParticle * currRecoP = currJet->getParticles()[j];
+			NTrk = currRecoP -> getTracks().size();
+			NClu = currRecoP -> getClusters().size();
+			TEveElementList* TrackAsshits = new TEveElementList;
+			TrackAsshits->SetName("PFOTrk");
+
+			TEveElementList* RecoPCluster = new TEveElementList;
+			RecoPCluster->SetName("PFOClu");
+
+
+			for(int k = 0; k < NTrk; k++)
+			{
+				Track* atrack = currRecoP -> getTracks()[k];
+				int AssoHitNum = atrack->getTrackerHits().size();
+				float Omega = atrack->getOmega();
+				float TanL = atrack->getTanLambda();
+				cout<<"Omega "<<Omega<<endl;
+				cout << "i = " << i << ", j = " << j << ", k = " << k << endl;
+				if(fabs(Omega) < 1e-3 || fabs(TanL) > 1)
+				{
+					cout << AssoHitNum << endl;
+					for(int l(0); l<AssoHitNum; l++)
+					{
+						TrackerHit* hit = dynamic_cast<TrackerHit*>( atrack->getTrackerHits()[l] );
+						HitX=hit->getPosition()[0];
+						HitY=hit->getPosition()[1];
+						HitZ=hit->getPosition()[2];
+
+						cout << "HitX = " << HitX << ", HitY = " << HitY << ", HitZ = " << HitZ << endl;
+
+						TEvePointSet* q1 = new TEvePointSet(1);
+						q1->SetName("Calorimeter Hit ");
+						q1->SetMarkerStyle(3);
+						q1->SetPoint(0, 0.1*HitX, 0.1*HitY, 0.1*HitZ);
+						q1->SetMarkerColor(colorindex);
+
+						q1->SetMarkerSize(0.1);
+						TrackAsshits->AddElement(q1);
+					}
+				}
+			}
+
+			// for(int k2 = 0; k2 < NClu; k2++)
+			// {
+			// 	Cluster* aclu = currRecoP -> getClusters()[k2];
+			// 	CalorimeterHitVec Hits = aclu->getCalorimeterHits();
+			// 	for(int j2 = 0; j2<Hits.size(); j2++)
+			// 	{
+			// 		TVector3 HitPosition = Hits[j2]->getPosition();
+			// 		float HitEn = Hits[j2]->getEnergy();
+			// 		HitPosition *= 0.1;
+			// 		TEveBox* q = new TEveBox();
+			// 		q = BoxPhi(HitPosition, HitScale, -1, 0, HitEn );
+			// 		q->SetMainColor(colorindex);
+			// 		q->SetLineColor(colorindex);
+			// 		RecoPCluster->AddElement(q);
+			// 	}
+			// }
+
+			a_Jet->AddElement(TrackAsshits);
+			// a_Jet->AddElement(RecoPCluster);
+		}
+
+		Jets->AddElement(a_Jet);
+	}
+	return Jets;
+}
+
+#include "TStyle.h"
+#include "TEveBox.h"
+#include "TVector3.h"
+
+TEveBox* Event::BoxPhi( TVector3 &HitPos, TVector3 &Scale, int Type, int SegOrStaveNumber, float HitEnergy ){
+
+	//Type = -1; EndCap
+	//Type = 0; Barrel, Based On Segment Number, ultilized for a la Videau Model HCAL
+	//Type = 1; Barrel, Based On Phi Angle, ultilized for TESLA Model HCAL
+	//Type = 2; Barrel, Based On Segment Number, ultilized for SID ECAL
+
+	TEveBox * q = new TEveBox();
+	q->SetName(Form("HitE = %.3e MeV", HitEnergy*1000));
+
+	TStyle *gStyle;
+	gStyle->SetPalette(1,0);
+	q->SetMainTransparency(0);
+
+	const float DegToRad = 1.74532925199432781e-02;
+	const float Pi = 3.1415926535;
+
+	float HitX=HitPos(0);
+	float HitY=HitPos(1);
+	float HitZ=HitPos(2);
+
+	float s1X = 0;
+	float s1Y = 0;
+	float s1Z = 0;
+	float s2X = 0;
+	float s2Y = 0;
+	float s2Z = 0;
+
+
+	float phiAngle = 0;
+	float SX = 0;
+	float SY = 0;
+	float SZ = 0;
+	float SX1 = 0;
+	float SY1 = 0;
+	float SZ1 = 0;
+
+
+	if(Type==-1)	//Based on EndCap
+	{
+
+		s1X = -1*Scale(0)/2.0;
+		s2X = -1*s1X;
+		s1Y = -1*Scale(1)/2.0;
+		s2Y = s1Y;
+		s1Z = Scale(2)/2.0;
+		s2Z = s1Z;
+
+		SX = fabs(0.5*Scale(0));
+		SY = fabs(0.5*Scale(1));
+		SZ = fabs(0.5*Scale(2));
+		SX1 = SX;
+		SY1 = SY;
+		SZ1 = SZ;
+	}
+	else {
+		if(Type==1)	//Based on Phi & SegmentNumbers(>=4 at least)
+		{
+			if(HitPos.Phi()>0)
+			{
+				phiAngle = 2*Pi/SegOrStaveNumber * int(HitPos.Phi()*SegOrStaveNumber/2/Pi+0.5);
+			}else if(HitPos.Phi()<=0)
+			{
+				phiAngle = 2*Pi/SegOrStaveNumber * int(HitPos.Phi()*SegOrStaveNumber/2/Pi-0.5);
+			}
+		}
+		if(Type==0)	//Based on StaveNumber		Currently Only used for ILD00 a la Videau model
+		{
+			if(SegOrStaveNumber==2 || SegOrStaveNumber==6)
+			{phiAngle = 0;}
+			if(SegOrStaveNumber==0 || SegOrStaveNumber==4)
+			{phiAngle = 90*DegToRad;}
+			if(SegOrStaveNumber==3 || SegOrStaveNumber==7)
+			{phiAngle = 45*DegToRad;}
+			if(SegOrStaveNumber==1 || SegOrStaveNumber==5)
+			{phiAngle = 135*DegToRad;}
+		}
+		if(Type==2) //Based on StaveNumber		Used for SID ECAL
+		{
+			if(SegOrStaveNumber == 3 || SegOrStaveNumber == 9)
+			{phiAngle = 0;}
+			if(SegOrStaveNumber == 2 || SegOrStaveNumber == 8)
+			{phiAngle = 30*DegToRad;}
+			if(SegOrStaveNumber == 1 || SegOrStaveNumber == 7)
+			{phiAngle = 60*DegToRad;}
+			if(SegOrStaveNumber == 0 || SegOrStaveNumber == 6)
+			{phiAngle = 90*DegToRad;}
+			if(SegOrStaveNumber == 5 || SegOrStaveNumber == 11)
+			{phiAngle = 120*DegToRad;}
+			if(SegOrStaveNumber == 4 || SegOrStaveNumber == 10)
+			{phiAngle = 150*DegToRad;}
+		}	
+
+
+		s1X = -0.5*(Scale(0)*sin(phiAngle)+Scale(2)*cos(phiAngle));
+		s1Y = 0.5*(Scale(0)*cos(phiAngle)-Scale(2)*sin(phiAngle));
+		s2X = -0.5*(Scale(0)*sin(phiAngle)-Scale(2)*cos(phiAngle));
+		s2Y = 0.5*(Scale(0)*cos(phiAngle)+Scale(2)*sin(phiAngle));
+		s1Z = Scale(1)/2.0;
+		s2Z = s1Z;
+
+		SX = fabs(0.5*(Scale(0)*sin(phiAngle)+Scale(2)*cos(phiAngle)));
+		SX1 = fabs(0.5*(Scale(0)*sin(phiAngle)-Scale(2)*cos(phiAngle)));
+		SY = fabs(0.5*(Scale(0)*cos(phiAngle)-Scale(2)*sin(phiAngle)));
+		SY1 = fabs(0.5*(Scale(0)*cos(phiAngle)+Scale(2)*sin(phiAngle)));
+		SZ = fabs(0.5*Scale(1));
+		SZ1 = SZ;
+
+	}
+
+	q->SetVertex(5, HitX+s2X, HitY+s2Y, HitZ-s1Z);
+	q->SetVertex(6, HitX+s2X, HitY+s2Y, HitZ+s1Z);
+
+	q->SetVertex(4, HitX+s1X, HitY+s1Y, HitZ-s1Z);
+	q->SetVertex(7, HitX+s1X, HitY+s1Y, HitZ+s1Z);
+
+	q->SetVertex(3, HitX-s2X, HitY-s2Y, HitZ+s1Z);
+	q->SetVertex(0, HitX-s2X, HitY-s2Y, HitZ-s1Z);
+
+	q->SetVertex(2, HitX-s1X, HitY-s1Y, HitZ+s1Z);
+	q->SetVertex(1, HitX-s1X, HitY-s1Y, HitZ-s1Z);
+
+	return q;
 }
