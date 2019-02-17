@@ -152,6 +152,10 @@ int main(int argc, char** argv) {
     TGTextButton* b_exit = new TGTextButton(bframe1,"Exit","gApplication->Terminate(0)");
     bframe1->AddFrame(b_exit,new TGLayoutHints(kLHintsRight));
 
+    TGTextButton* b_display = new TGTextButton(bframe1,"DisplayMCParticles");
+    b_display->Connect("Clicked()","Event",ev,"DisplayMCParticles()");
+    bframe1->AddFrame(b_display,new TGLayoutHints(kLHintsCenterX));
+
     // display preparation done.
     frm->MapSubwindows();
     frm->Layout();

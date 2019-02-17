@@ -7,9 +7,17 @@ This is my reaech report. I write what I did and what I will do.
 ## Daily
 
 ### Want to do
+- [ ] Set buttons to toggle rendering state of particles.
 - [ ] Toggle displaying of MCParticle and Reconstructed.
 - [ ] Divide files.
-- [ ] Display MCParticles which their parent is top or W.
+
+### 20190117
+* To toggle rendering, the block of Event.cc L896 is important.
+    * Get track list by BeginChildren() method, and set rendering state depending on their element name.
+- [ ] Toggle rendering state of MCParticles.
+
+### 20190110
+- [x] Display MCParticles which their parent is top or W.
 
 ### 20190109
 - [x] Display jets

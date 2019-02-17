@@ -26,6 +26,7 @@ class Event : public TObject {
     void OpenFile();
     void Next();
     void Prev();
+    void DisplayMCParticles();
     void loadEvent();
     void printEventInfo(LCEvent* evt);
     void printMCParticlesInfo(const EVENT::LCCollection* col);

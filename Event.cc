@@ -356,7 +356,7 @@ void Event::loadMCparticlesEvent() {
         _pMCParticle->Destroy();
     }
     _pMCParticle = BuildMCParticles( _evt );
-    _pMCParticle -> SetRnrSelfChildren(_MCPDraw, _MCPChildDraw);
+    _pMCParticle -> SetRnrSelfChildren(false, false);
     _pMCParticle->SetName("MCPARTICLE");
     gEve->AddElement(_pMCParticle);
 }
@@ -475,12 +475,12 @@ TEveElementList* Event::BuildMCParticles( LCEvent *evt ){
 		{"NeutralHad",   5, 1, 1},
 		{"Neutrino  ",   7, 1, 1},
 		{"LowE      ",   15, 1, 1},
-		{"Bottom+      ",   kBlue, 2, 1},
-		{"Bottom-      ",   kBlue, 2, 1},
-		{"Down+        ",   kRed, 2, 1},
-		{"Down-        ",   kRed, 2, 1},
-		{"Up+          ",   kGreen, 2, 1},
-		{"Up-          ",   kGreen, 2, 1}
+		{"Bottom+      ",   kBlue, 10, 1},
+		{"Bottom-      ",   kBlue, 10, 1},
+		{"Down+        ",   kRed, 10, 1},
+		{"Down-        ",   kRed, 10, 1},
+		{"Up+          ",   kGreen, 10, 1},
+		{"Up-          ",   kGreen, 10, 1}
 	};
 
 
@@ -964,22 +964,22 @@ TEveElementList* Event::BuildPFOs(EVENT::LCCollection* col, std::string name )
 
 	PFODisplay PFOParams[kRecLast] = {
 		{"None       ", 0, 0, 0, 0},
-		{"Electron   ", 53, 2, 9, 10},
-		{"Positron   ", 98, 2, 9, 90},
-		{"Muon+      ", 2, 2, 9, 95},
-		{"Muon-      ", 4, 2, 9, 5},
-		{"Pion+      ", 96, 2, 9, 85},
-		{"Pion-      ", 66, 2, 9, 15},
-		{"Kaon+      ", 6, 2, 9, 75},
-		{"Kaon-      ", 7, 2, 9, 25},
-		{"Proton     ", 6, 2, 9, 80},
-		{"Neutron    ", 7, 1, 2, 30},
-		{"Klong     ", 3, 1, 2, 40},
-		{"Gamma     ", 5, 1, 2, 70},
-		{"Ion+      ", 99, 1, 2, 75},
-		{"Ion-		", 58, 1, 2, 75},
-		{"NeutralHad", 4, 2, 2, 35},
-		{"LowE      ", 15, 2, 2, 33}
+		{"Electron   ", 0, 10, 9, 10},
+		{"Positron   ", 0, 10, 9, 90},
+		{"Muon+      ", 0, 10, 9, 95},
+		{"Muon-      ", 0, 10, 9, 5},
+		{"Pion+      ", 0, 10, 9, 85},
+		{"Pion-      ", 0, 10, 9, 15},
+		{"Kaon+      ", 0, 10, 9, 75},
+		{"Kaon-      ", 0, 10, 9, 25},
+		{"Proton     ", 0, 10, 9, 80},
+		{"Neutron    ", 0, 10, 2, 30},
+		{"Klong     ", 0, 10, 2, 40},
+		{"Gamma     ", 0, 10, 2, 70},
+		{"Ion+      ", kRed, 10, 2, 75},
+		{"Ion-		", kRed, 10, 2, 75},
+		{"NeutralHad", kBlue, 10, 2, 35},
+		{"LowE      ", 0, 10, 2, 33}
 	};
 
 	int PID, ParentNum, DaughterNum;
@@ -1701,4 +1701,13 @@ TEveBox* Event::BoxPhi( TVector3 &HitPos, TVector3 &Scale, int Type, int SegOrSt
 	q->SetVertex(1, HitX-s1X, HitY-s1Y, HitZ-s1Z);
 
 	return q;
+}
+
+void Event::DisplayMCParticles() {
+	// MCTrack elements
+	Bool_t selfRnrState = !(_pMCParticle->GetRnrSelf());
+	Bool_t childRnrState = !(_pMCParticle->GetRnrChildren());
+
+	_pMCParticle -> SetRnrSelfChildren(selfRnrState, childRnrState);
+	gEve->Redraw3D(kFALSE, kTRUE);
 }
